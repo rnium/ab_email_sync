@@ -1,5 +1,17 @@
-import { getApi } from '../actual/client.js';
-import type { ImportTransactionsBody } from '../validation/transactionsValidation.js';
+import type { TransactionEntity } from "@actual-app/core/types/models";
+import { getApi } from "../actual/client.js";
+import { fromActualAmount, toActualAmount } from "../utils/amount.js";
+import type { ImportTransactionsBody } from "../validation/transactionsValidation.js";
+
+function fromActualTransaction(t: TransactionEntity): TransactionEntity {
+  return {
+    ...t,
+    amount: fromActualAmount(t.amount),
+    ...(t.subtransactions && {
+      subtransactions: t.subtransactions.map(fromActualTransaction),
+    }),
+  };
+}
 
 export async function importTransactions(
   accountId: string,
@@ -7,7 +19,30 @@ export async function importTransactions(
 ) {
   const api = getApi();
 
-  const withAccount = transactions.map((t) => ({ ...t, account: accountId }));
+  const withAccount = transactions.map((t) => ({
+    ...t,
+    account: accountId,
+    ...(t.amount !== undefined ? { amount: toActualAmount(t.amount) } : {}),
+    ...(t.subtransactions
+      ? {
+          subtransactions: t.subtransactions.map((sub) => ({
+            ...sub,
+            amount: toActualAmount(sub.amount),
+          })),
+        }
+      : {}),
+  }));
 
-  return api.importTransactions(accountId, withAccount, opts);
+  const result = await api.importTransactions(accountId, withAccount, opts);
+
+  return {
+    ...result,
+    updatedPreview: result.updatedPreview.map((preview) => ({
+      ...preview,
+      transaction: fromActualTransaction(preview.transaction),
+      ...(preview.existing && {
+        existing: fromActualTransaction(preview.existing),
+      }),
+    })),
+  };
 }

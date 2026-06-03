@@ -130,7 +130,7 @@ curl -s "http://localhost:3000/api/v1/category-groups?hidden=false" | jq
 - Body (JSON) schema (validated):
   - `transactions` (array, required) — list of transaction objects (see fields below). Each transaction object may include:
     - `date` (string, required) — `YYYY-MM-DD`
-    - `amount` (integer, optional) — currency amount in smallest unit (e.g. cents)
+    - `amount` (integer, optional) — see [Amount format](#amount-format) below
     - `payee` (string | null, optional) — payee id
     - `payee_name` (string, optional) — name for a new/auto-assigned payee
     - `imported_payee` (string, optional)
@@ -139,21 +139,33 @@ curl -s "http://localhost:3000/api/v1/category-groups?hidden=false" | jq
     - `imported_id` (string, optional) — external unique id to prevent duplicates
     - `transfer_id` (string, optional)
     - `cleared` (boolean, optional)
-    - `subtransactions` (array, optional) — each with `amount` (integer) and optional `category`, `notes`
+    - `subtransactions` (array, optional) — each with `amount` (integer, required) and optional `category`, `notes`
   - `opts` (object, optional):
     - `defaultCleared` (boolean)
     - `dryRun` (boolean)
     - `reimportDeleted` (boolean)
 
+#### Amount format
+
+Amounts are provided as integers or floats. The server converts them to Actual's internal integer format with `Math.round(amount * 100)`, then divides by 100 on the way back out. This applies to transaction amounts and subtransaction amounts alike.
+
+| You send | Calculation | Stored in Actual | Returned to you |
+|---|---|---|---|
+| `1201` | `1201 × 100` | `120100` | `1201` |
+| `-1102` | `-1102 × 100` | `-110200` | `-1102` |
+| `-1201.676` | `round(-1201.676 × 100)` = `round(-120167.6)` | `-120168` | `-1201.68` |
+| `99.999` | `round(99.999 × 100)` = `round(9999.9)` | `10000` | `100` |
+| `0` | `0 × 100` | `0` | `0` |
+
 Notes:
 - The `account` property is injected server-side from the `:accountId` parameter; clients must not include `account` in the transaction objects.
 - Dates are strictly validated to `YYYY-MM-DD` format.
-- Amounts must be integers (Actual uses integer currency representation).
+- Amounts accept any number (integer or float). The rounding step means precision beyond 2 decimal places is lost.
 
 Response: `{ data: ImportTransactionsResult }` where `ImportTransactionsResult` contains:
 - `added`: `string[]` — IDs of newly added transactions
 - `updated`: `string[]` — IDs of updated transactions
-- `updatedPreview`: Array of preview objects (each contains `transaction`, optional `existing`, `ignored`, `tombstone`)
+- `updatedPreview`: Array of preview objects (each contains `transaction`, optional `existing`, `ignored`, `tombstone`). `transaction.amount` and `existing.amount` are in the scaled-down form (÷ 100).
 - `errors`: Array of `{ message: string }` describing any errors encountered
 
 Example request:
@@ -207,6 +219,15 @@ Example response (successful import):
 - If the Actual client has not been initialized or the server fails to connect, the startup process fails with a descriptive message. At runtime if the API call fails, a `5xx` will be returned with the underlying message.
 
 - If the server is started without required environment variables the process fails immediately with a helpful message calling out missing variables.
+
+## Amount conversion
+
+All transaction amounts pass through `src/utils/amount.ts`:
+
+- `toActualAmount(n)` — `Math.round(n * 100)` before sending to the Actual API; handles both integers and floats, rounding to 2 decimal places of precision
+- `fromActualAmount(n)` — `n / 100` before returning in responses
+
+This conversion is applied in `src/services/transactionsService.ts` to top-level transaction amounts and every subtransaction amount, both on input and on response (`updatedPreview` objects).
 
 ## Implementation notes & files
 
