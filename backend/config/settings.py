@@ -124,3 +124,11 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# DEFAULT SETTINGS
+EMAIL_MAX_AGE=10 #days
+EMAIL_MAX_RESULTS=1000
+
+# CONFIGURATION KEYS
+GMAIL_CONFIG_KEY = "GMAIL_CONFIG_JSON"
+GMAIL_TOKEN_KEY = "GMAIL_TOKEN_JSON"
