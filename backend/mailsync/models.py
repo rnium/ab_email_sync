@@ -21,10 +21,22 @@ class BankAccount(models.Model):
         return f"{self.bank_name} - {self.account_number}"
 
 
-class BankMail(models.Model):
+class BankMailConfig(models.Model):
+    mail_element_choices = (
+        ('subject', 'Subject'),
+        ('body', 'Body'),
+    )
+    direction_choices = (
+        ('incoming', 'Incoming'),
+        ('outgoing', 'Outgoing'),
+    )
+    direction = models.CharField(max_length=20, choices=direction_choices)
     bank_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE)
     from_name = models.CharField(max_length=255)
-    subject = models.CharField(max_length=255)
+    subject = models.CharField(max_length=255, verbose_name='Subject Regex')
+    direction_is_in = models.CharField(max_length=255, choices=mail_element_choices, default='subject')
+    direction_regex = models.CharField(max_length=500)
+    amount_is_in = models.CharField(max_length=255, choices=mail_element_choices, default='body')
     amount_regex = models.CharField(max_length=255)
     
     def __str__(self):
@@ -40,7 +52,7 @@ class SyncLog(models.Model):
     
     transaction_type = models.CharField(max_length=20, choices=transaction_types)
     transaction_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    bank_mail = models.ForeignKey(BankMail, on_delete=models.CASCADE)
+    bank_mail = models.ForeignKey(BankMailConfig, on_delete=models.CASCADE)
     sync_time = models.DateTimeField(auto_now_add=True)
     success = models.BooleanField(default=False)
     error_message = models.TextField(null=True, blank=True)
