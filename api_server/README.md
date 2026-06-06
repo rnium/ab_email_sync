@@ -249,7 +249,3 @@ This conversion is applied in `src/services/transactionsService.ts` to top-level
 
 - Do not commit `.env` or any secrets. The `.env.example` file documents required variables only.
 - This service is intended to run in a trusted environment that has network access to your Actual server. Put it behind proper network/firewall controls if used in production.
-
----
-
-If you want, I can also generate an OpenAPI (Swagger) spec file next. 
