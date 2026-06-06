@@ -29,7 +29,7 @@ class Transaction:
         date: str,
         amount: float,
         transaction_type: TransactionType,
-        to_name=None,
+        to_trx: "Transaction | None" = None,
     ):
         if not isinstance(amount, float):
             raise ValueError("amount must be a float")
@@ -40,9 +40,9 @@ class Transaction:
         self.date = date
         self.amount = amount
         self.transaction_type = transaction_type
-        self.to_name = to_name
+        self.to_trx = to_trx
 
     def __hash__(self):
         return hash(
-            (self.from_name, self.subject, self.date, self.amount, self.to_name)
+            (self.from_name, self.subject, self.date, self.amount, hash(self.to_trx))
         )

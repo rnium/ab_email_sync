@@ -74,5 +74,32 @@ def build_transaction(message: EmailMessage) -> Transaction | None:
         amount=amount,
     )
 
+
 def consolidate_transactions(transactions: List[Transaction]) -> List[Transaction]:
-    return transactions
+    if len(transactions) < 2:
+        return transactions
+    types = set([tr.transaction_type for tr in transactions])
+    if len(types) < 2:
+        return transactions
+    out_transactions = filter(
+        lambda tr: tr.transaction_type == TransactionType.OUTGOING, transactions
+    )
+    removables: List[Transaction] = []
+
+    for o_trx in out_transactions:
+        in_transactions = list(
+            filter(
+                lambda tr: (
+                    tr.transaction_type == TransactionType.INCOMING
+                    and tr.amount == o_trx.amount
+                ),
+                transactions,
+            )
+        )
+        if len(in_transactions) == 0:
+            continue
+        o_trx.to_trx = in_transactions[0]
+        removables.append(in_transactions[0])
+
+    consolidated = list(filter(lambda tr: tr not in removables, transactions))
+    return consolidated
