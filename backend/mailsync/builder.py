@@ -72,6 +72,7 @@ def build_transaction(message: EmailMessage) -> Transaction | None:
         date=message.date_str,
         transaction_type=transaction_type,
         amount=amount,
+        mail_config=conf
     )
 
 
@@ -103,3 +104,10 @@ def consolidate_transactions(transactions: List[Transaction]) -> List[Transactio
 
     consolidated = list(filter(lambda tr: tr not in removables, transactions))
     return consolidated
+
+def get_transactions(messages: List[EmailMessage]) -> List[Transaction]:
+    transactions = []
+    for message in messages:
+        if trx := build_transaction(message):
+            transactions.append(trx)
+    return consolidate_transactions(transactions)

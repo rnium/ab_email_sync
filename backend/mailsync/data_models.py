@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Any
 
 
 class TransactionType(StrEnum):
@@ -30,6 +31,7 @@ class Transaction:
         amount: float,
         transaction_type: TransactionType,
         to_trx: "Transaction | None" = None,
+        mail_config: Any = None,
     ):
         if not isinstance(amount, float):
             raise ValueError("amount must be a float")
@@ -41,6 +43,9 @@ class Transaction:
         self.amount = amount
         self.transaction_type = transaction_type
         self.to_trx = to_trx
+        self.ab_note = ""
+        self.ab_category = ""
+        self.mail_config = mail_config
 
     def __hash__(self):
         return hash(

@@ -10,11 +10,11 @@ from .builder import (
     consolidate_transactions,
     deduce_amount,
     deduce_transaction_type,
+    get_transactions
 )
 from .data_models import EmailElement, EmailMessage, Transaction, TransactionType
 from .models import BankAccount, BankMailConfig
 from .services.gmail_utils import decode_body, get_message_body, html_to_text
-from .utils import get_transactions
 
 
 def make_message(
@@ -288,8 +288,8 @@ class BuildTransactionTests(TestCase):
 
 
 class TransactionUtilsTests(SimpleTestCase):
-    @patch("mailsync.utils.consolidate_transactions")
-    @patch("mailsync.utils.build_transaction")
+    @patch("mailsync.builder.consolidate_transactions")
+    @patch("mailsync.builder.build_transaction")
     def test_get_transactions_filters_failed_builds_before_consolidating(
         self, build_mock, consolidate_mock
     ):
