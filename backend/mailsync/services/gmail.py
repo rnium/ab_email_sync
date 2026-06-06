@@ -7,6 +7,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow, json
 from googleapiclient.discovery import build
 from mailsync.data_models import EmailMessage
 from mailsync.models import Configuration as Config
+from .gmail_utils import get_message_body
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
@@ -85,7 +86,7 @@ def get_primary_unread_messages(
                     subject=subject,
                     sender=sender,
                     date_str=date,
-                    text="",
+                    text=get_message_body(message["payload"]),
                     snippet=message.get("snippet", ""),
                 )
             )

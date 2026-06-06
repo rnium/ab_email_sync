@@ -1,4 +1,5 @@
 from django.db import models
+from .data_models import TransactionType, EmailElement
 
 
 class Configuration(models.Model):
@@ -41,13 +42,11 @@ class BankAccount(models.Model):
 
 
 class BankMailConfig(models.Model):
-    mail_element_choices = (
-        ("subject", "Subject"),
-        ("body", "Body"),
-    )
+    mail_element_choices = [
+        (item.value, item.name.title()) for item in EmailElement
+    ]
     direction_choices = (
-        ("incoming", "Incoming"),
-        ("outgoing", "Outgoing"),
+        (item.value, item.name.title()) for item in TransactionType
     )
     direction = models.CharField(max_length=20, choices=direction_choices)
     bank_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE)
