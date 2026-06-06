@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
@@ -51,3 +51,43 @@ class Transaction:
         return hash(
             (self.from_name, self.subject, self.date, self.amount, hash(self.to_trx))
         )
+
+
+@dataclass
+class Account:
+    id: str
+    name: str
+    offbudget: bool
+    closed: bool
+    note: str | None
+    balance_current: float
+
+
+@dataclass
+class Payee:
+    id: str
+    name: str
+    category: str | None
+    transfer_acct: str | None
+
+
+@dataclass
+class Category:
+    id: str
+    name: str
+    is_income: bool
+    hidden: bool
+    group_id: str
+    sort_order: float | None = None
+    tombstone: bool | None = None
+
+
+@dataclass
+class CategoryGroup:
+    id: str
+    name: str
+    is_income: bool
+    hidden: bool
+    categories: list["Category"] = field(default_factory=list)
+    sort_order: float | None = None
+    tombstone: bool | None = None
