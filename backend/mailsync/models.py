@@ -1,5 +1,6 @@
 from django.db import models
-from .data_models import TransactionType, EmailElement
+
+from .data_models import EmailElement, TransactionType
 
 
 class Configuration(models.Model):
@@ -20,12 +21,14 @@ class BankAccount(models.Model):
     bank_name = models.CharField(max_length=255)
     account_number = models.CharField(max_length=20)
     actual_budget_account_name = models.CharField(max_length=255)
+    actual_budget_account_id = models.CharField(max_length=255, null=True, blank=True)
     actual_budget_payee_name = models.CharField(
         max_length=255,
         null=True,
         blank=True,
         help_text="Leave blank to use the Actual Budget account name as the payee.",
     )
+    actual_budget_payee_id = models.CharField(max_length=255, null=True, blank=True)
     is_salary_account = models.BooleanField(default=False)
     salary_amount = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True
@@ -42,12 +45,8 @@ class BankAccount(models.Model):
 
 
 class BankMailConfig(models.Model):
-    mail_element_choices = [
-        (item.value, item.name.title()) for item in EmailElement
-    ]
-    direction_choices = (
-        (item.value, item.name.title()) for item in TransactionType
-    )
+    mail_element_choices = [(item.value, item.name.title()) for item in EmailElement]
+    direction_choices = ((item.value, item.name.title()) for item in TransactionType)
     direction = models.CharField(max_length=20, choices=direction_choices)
     bank_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE)
     from_name = models.CharField(max_length=255)
