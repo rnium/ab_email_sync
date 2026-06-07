@@ -8,17 +8,21 @@ from .models import BankMailConfig
 def deduce_transaction_type(
     conf: BankMailConfig, msg: EmailMessage
 ) -> TransactionType | None:
-    target_str = ""
+    targets = []
     match conf.direction_is_in:
         case EmailElement.SUBJECT:
-            target_str = msg.subject
+            targets.append(msg.subject)
         case EmailElement.BODY:
-            target_str = msg.text
-    if not target_str:
+            targets.extend([msg.text, msg.snippet])
+    if not targets:
         return None
-    if re.search(conf.direction_regex, target_str, flags=re.IGNORECASE) is None:
-        return None
+    match = None
+    for target in targets:
+        if match := re.search(conf.direction_regex, target, flags=re.IGNORECASE):
+            break
 
+    if not match:
+        return
     return TransactionType(conf.direction)
 
 
@@ -32,16 +36,21 @@ def amount_str_to_float(amount_str: str) -> float | None:
 
 
 def deduce_amount(conf: BankMailConfig, msg: EmailMessage) -> float | None:
-    target_str = ""
+    targets = []
     match conf.amount_is_in:
         case EmailElement.SUBJECT:
-            target_str = msg.subject
+            targets.append(msg.subject)
         case EmailElement.BODY:
-            target_str = msg.text
-    if not target_str:
+            targets.extend([msg.text, msg.snippet])
+
+    if not targets:
         return None
 
-    match = re.search(conf.amount_regex, target_str, flags=re.IGNORECASE)
+    match = None
+    for target in targets:
+        match = re.search(conf.amount_regex, target, flags=re.IGNORECASE)
+        if match:
+            break
     if not match:
         return None
 
