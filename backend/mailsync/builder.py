@@ -53,14 +53,17 @@ def build_transaction(message: EmailMessage) -> Transaction | None:
     if mail_confs.count() < 1:
         return
     conf = None
+    transaction_type = None
     for c in mail_confs:
         if re.search(c.subject, message.subject, flags=re.IGNORECASE):
+            transaction_type = deduce_transaction_type(c, message)
+            if not transaction_type:
+                continue
             conf = c
             break
     if not conf:
         return None
 
-    transaction_type = deduce_transaction_type(conf, message)
     amount = deduce_amount(conf, message)
 
     if transaction_type is None or amount is None:
@@ -72,7 +75,7 @@ def build_transaction(message: EmailMessage) -> Transaction | None:
         date=message.date_str,
         transaction_type=transaction_type,
         amount=amount,
-        mail_config=conf
+        mail_config=conf,
     )
 
 
@@ -104,6 +107,7 @@ def consolidate_transactions(transactions: List[Transaction]) -> List[Transactio
 
     consolidated = list(filter(lambda tr: tr not in removables, transactions))
     return consolidated
+
 
 def get_transactions(messages: List[EmailMessage]) -> List[Transaction]:
     transactions = []
