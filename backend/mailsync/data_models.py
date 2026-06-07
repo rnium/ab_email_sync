@@ -45,6 +45,7 @@ class Transaction:
         self.to_trx = to_trx
         self.ab_note = ""
         self.ab_category = ""
+        self.ab_account_id: Any = None
         self.mail_config = mail_config
 
     def __hash__(self):

@@ -2,7 +2,6 @@ from datetime import datetime
 from email.utils import parsedate_to_datetime
 from typing import Any
 
-from backend.mailsync.models import BankAccount, BankMailConfig
 from mailsync.data_models import (
     Account,
     Category,
@@ -11,6 +10,7 @@ from mailsync.data_models import (
     Transaction,
     TransactionType,
 )
+from mailsync.models import BankAccount, BankMailConfig
 
 from .actual_utils import (
     ENDPOINT_ACCOUNTS,
@@ -112,7 +112,7 @@ def get_categories(hidden: bool | None = None) -> list[Category]:
 # ---------------------------------------------------------------------------
 
 
-def _parse_date(date_str: str) -> str:
+def _parse_or_get_current_date(date_str: str) -> str:
     """Normalise any date string coming from an email header to YYYY-MM-DD."""
     try:
         return parsedate_to_datetime(date_str).strftime("%Y-%m-%d")
@@ -130,7 +130,10 @@ def _get_payee_id(bank_acct: BankAccount, conf: BankMailConfig) -> str | None:
         return payee_id
     else:
         all_payees = get_payees()
-        payee_name = conf.bank_account.actual_budget_account_name
+        payee_name = (
+            conf.bank_account.actual_budget_payee_name
+            or conf.bank_account.actual_budget_account_name
+        )
         payee = list(filter(lambda p: p.name == payee_name, all_payees))
         if len(payee) > 0:
             return payee[0].id
@@ -144,7 +147,7 @@ def _build_transaction_payload(trx: Transaction) -> dict[str, Any]:
     )
 
     payload: dict[str, Any] = {
-        "date": _parse_date(trx.date),
+        "date": _parse_or_get_current_date(trx.date),
         "amount": signed_amount,
         "imported_id": str(hash(trx)),
         "notes": trx.ab_note or trx.subject,
