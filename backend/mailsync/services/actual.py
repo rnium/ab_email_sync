@@ -150,7 +150,7 @@ def _build_transaction_payload(trx: Transaction) -> dict[str, Any]:
         "date": _parse_or_get_current_date(trx.date),
         "amount": signed_amount,
         "imported_id": str(hash(trx)),
-        "notes": trx.ab_note or trx.subject,
+        "notes": trx.ab_note,
     }
 
     if trx.ab_category:
