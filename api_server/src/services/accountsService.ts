@@ -1,6 +1,11 @@
 import type { APIAccountEntity } from '@actual-app/api/models';
-import { getApi } from '../actual/client.js';
+import {
+  type ActualCredentials,
+  withActualApi,
+} from '../actual/client.js';
 
-export async function getAllAccounts(): Promise<APIAccountEntity[]> {
-  return getApi().getAccounts();
+export async function getAllAccounts(
+  credentials: ActualCredentials,
+): Promise<APIAccountEntity[]> {
+  return withActualApi(credentials, (api) => api.getAccounts());
 }

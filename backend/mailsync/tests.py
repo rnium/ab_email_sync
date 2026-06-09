@@ -1,7 +1,9 @@
 import base64
 from types import SimpleNamespace
-from unittest.mock import call, patch
+from unittest.mock import Mock, call, patch
 
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, TestCase
 
 from .builder import (
@@ -13,7 +15,8 @@ from .builder import (
     get_transactions
 )
 from .data_models import EmailElement, EmailMessage, Transaction, TransactionType
-from .models import BankAccount, BankMailConfig
+from .models import BankAccount, BankMailConfig, Configuration
+from .services.actual_utils import api_get, api_post
 from .services.gmail_utils import decode_body, get_message_body, html_to_text
 
 
@@ -312,6 +315,76 @@ class TransactionUtilsTests(SimpleTestCase):
             [call(message) for message in messages],
         )
         consolidate_mock.assert_called_once_with([first, second])
+
+
+class ActualApiRequestTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        Configuration.objects.create(
+            label="Actual Budget Password",
+            key=settings.ACTUAL_BUDGET_PASSWORD_KEY,
+            value="server-password",
+        )
+        Configuration.objects.create(
+            label="Actual Budget Sync ID",
+            key=settings.ACTUAL_BUDGET_SYNC_ID_KEY,
+            value="budget-sync-id",
+        )
+
+    @staticmethod
+    def response(data):
+        response = Mock()
+        response.json.return_value = {"data": data}
+        return response
+
+    @patch("mailsync.services.actual_utils.requests.get")
+    def test_api_get_sends_credentials_from_configuration_values(self, get_mock):
+        get_mock.return_value = self.response(["account"])
+
+        result = api_get("http://api.test/accounts", params={"hidden": "false"})
+
+        self.assertEqual(result, ["account"])
+        get_mock.assert_called_once_with(
+            "http://api.test/accounts",
+            params={"hidden": "false"},
+            headers={
+                "X-Actual-Password": "server-password",
+                "X-Actual-Sync-Id": "budget-sync-id",
+            },
+        )
+        get_mock.return_value.raise_for_status.assert_called_once_with()
+
+    @patch("mailsync.services.actual_utils.requests.post")
+    def test_api_post_sends_credentials_from_configuration_values(self, post_mock):
+        post_mock.return_value = self.response({"added": ["transaction-id"]})
+        body = {"transactions": [{"amount": 10}]}
+
+        result = api_post("http://api.test/import", body)
+
+        self.assertEqual(result, {"added": ["transaction-id"]})
+        post_mock.assert_called_once_with(
+            "http://api.test/import",
+            json=body,
+            headers={
+                "X-Actual-Password": "server-password",
+                "X-Actual-Sync-Id": "budget-sync-id",
+            },
+        )
+        post_mock.return_value.raise_for_status.assert_called_once_with()
+
+    @patch("mailsync.services.actual_utils.requests.get")
+    def test_api_request_rejects_blank_configuration_values(self, get_mock):
+        Configuration.objects.filter(
+            key=settings.ACTUAL_BUDGET_SYNC_ID_KEY
+        ).update(value="")
+
+        with self.assertRaisesMessage(
+            ImproperlyConfigured,
+            settings.ACTUAL_BUDGET_SYNC_ID_KEY,
+        ):
+            api_get("http://api.test/accounts")
+
+        get_mock.assert_not_called()
 
 
 class GmailUtilsTests(SimpleTestCase):

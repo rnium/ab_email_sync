@@ -11,7 +11,11 @@ export const importTransactionsHandler = asyncHandler(
     const { accountId } = req.params as unknown as AccountIdParams;
     const body = req.body as ImportTransactionsBody;
 
-    const result = await importTransactions(accountId, body);
+    const result = await importTransactions(
+      res.locals.actualCredentials,
+      accountId,
+      body,
+    );
     res.json({ data: result });
   },
 );

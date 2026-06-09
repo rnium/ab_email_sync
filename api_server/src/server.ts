@@ -1,16 +1,15 @@
 import "dotenv/config";
 import { mkdir } from "node:fs/promises";
 import app from "./app.js";
-import { connect, disconnect } from "./actual/client.js";
-import config from "./config/actual.js";
+import { disconnect } from "./actual/client.js";
+import { validateConfig } from "./config/actual.js";
 
 const PORT = process.env.PORT ?? "3000";
 
 async function start(): Promise<void> {
+  const config = validateConfig();
   await mkdir(config.dataDir, { recursive: true });
   console.log(`Data directory: ${config.dataDir}`);
-
-  await connect();
 
   const server = app.listen(Number(PORT), () => {
     console.log(`Server running on port ${PORT}`);

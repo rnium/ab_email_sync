@@ -6,7 +6,10 @@ import type { CategoryGroupsQuery } from '../validation/categoryGroupsValidation
 export const getCategoryGroups = asyncHandler(
   async (req: Request, res: Response) => {
     const { hidden } = req.query as unknown as CategoryGroupsQuery;
-    const groups = await getAllCategoryGroups(hidden);
+    const groups = await getAllCategoryGroups(
+      res.locals.actualCredentials,
+      hidden,
+    );
     res.json({ data: groups });
   },
 );

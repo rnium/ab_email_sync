@@ -1,5 +1,8 @@
 import type { TransactionEntity } from "@actual-app/core/types/models";
-import { getApi } from "../actual/client.js";
+import {
+  type ActualCredentials,
+  withActualApi,
+} from "../actual/client.js";
 import { fromActualAmount, toActualAmount } from "../utils/amount.js";
 import type { ImportTransactionsBody } from "../validation/transactionsValidation.js";
 
@@ -14,11 +17,10 @@ function fromActualTransaction(t: TransactionEntity): TransactionEntity {
 }
 
 export async function importTransactions(
+  credentials: ActualCredentials,
   accountId: string,
   { transactions, opts }: ImportTransactionsBody,
 ) {
-  const api = getApi();
-
   const withAccount = transactions.map((t) => ({
     ...t,
     account: accountId,
@@ -33,7 +35,9 @@ export async function importTransactions(
       : {}),
   }));
 
-  const result = await api.importTransactions(accountId, withAccount, opts);
+  const result = await withActualApi(credentials, (api) =>
+    api.importTransactions(accountId, withAccount, opts),
+  );
 
   return {
     ...result,

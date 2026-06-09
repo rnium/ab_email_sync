@@ -12,7 +12,7 @@ Server implementation lives in `src/` (TypeScript, ESM). The service performs in
 
    ```sh
    cp .env.example .env
-   # edit .env and set ACTUAL_SERVER_URL, ACTUAL_PASSWORD, ACTUAL_SYNC_ID
+   # edit .env and set ACTUAL_SERVER_URL
    ```
 
 2. Development (run TypeScript directly):
@@ -36,17 +36,14 @@ Server implementation lives in `src/` (TypeScript, ESM). The service performs in
 ## Environment variables
 
 - `ACTUAL_SERVER_URL` (required) — Actual server URL (e.g. `http://localhost:5006`).
-- `ACTUAL_PASSWORD` (required) — Password for the Actual server.
-- `ACTUAL_SYNC_ID` (required) — Budget sync ID (Settings → Advanced → Sync ID).
-- `ACTUAL_BUDGET_PASSWORD` (optional) — Budget password if the budget is end-to-end encrypted.
 - `ACTUAL_DATA_DIR` (optional) — Override the default data directory.
 - `PORT` (optional) — HTTP port (default `3000`).
 - `NODE_ENV` (optional) — `development` or `production`.
 
-If any required environment variables are missing the server fails fast with a descriptive error:
+If the required environment variable is missing the server fails at startup with a descriptive error:
 
 ```
-Missing required environment variable(s): ACTUAL_SERVER_URL, ACTUAL_PASSWORD, ACTUAL_SYNC_ID
+Missing required environment variable: ACTUAL_SERVER_URL
 Copy .env.example to .env and fill in the values.
 ```
 
@@ -57,6 +54,11 @@ All endpoints are mounted under:
 ```
 /api/v1
 ```
+
+Every request must include:
+
+- `X-Actual-Password`: Actual server password.
+- `X-Actual-Sync-Id`: Budget sync ID from Settings → Advanced → Sync ID.
 
 ## Endpoints
 
@@ -78,7 +80,9 @@ APIAccountEntity fields (returned):
 Example curl:
 
 ```sh
-curl -s http://localhost:3000/api/v1/accounts | jq
+curl -s http://localhost:3000/api/v1/accounts \
+  -H 'X-Actual-Password: SERVER_PASSWORD' \
+  -H 'X-Actual-Sync-Id: BUDGET_SYNC_ID' | jq
 ```
 
 ### GET /payees
@@ -95,7 +99,9 @@ APIPayeeEntity fields (returned):
 Example curl:
 
 ```sh
-curl -s http://localhost:3000/api/v1/payees | jq
+curl -s http://localhost:3000/api/v1/payees \
+  -H 'X-Actual-Password: SERVER_PASSWORD' \
+  -H 'X-Actual-Sync-Id: BUDGET_SYNC_ID' | jq
 ```
 
 ### GET /category-groups
@@ -116,9 +122,13 @@ Example curl:
 
 ```sh
 # all groups
-curl -s http://localhost:3000/api/v1/category-groups | jq
+curl -s http://localhost:3000/api/v1/category-groups \
+  -H 'X-Actual-Password: SERVER_PASSWORD' \
+  -H 'X-Actual-Sync-Id: BUDGET_SYNC_ID' | jq
 # only visible groups
-curl -s "http://localhost:3000/api/v1/category-groups?hidden=false" | jq
+curl -s "http://localhost:3000/api/v1/category-groups?hidden=false" \
+  -H 'X-Actual-Password: SERVER_PASSWORD' \
+  -H 'X-Actual-Sync-Id: BUDGET_SYNC_ID' | jq
 ```
 
 ### POST /accounts/:accountId/transactions/import
@@ -173,6 +183,8 @@ Example request:
 ```sh
 curl -X POST http://localhost:3000/api/v1/accounts/ACCOUNT_ID/transactions/import \
   -H 'Content-Type: application/json' \
+  -H 'X-Actual-Password: SERVER_PASSWORD' \
+  -H 'X-Actual-Sync-Id: BUDGET_SYNC_ID' \
   -d '{
     "transactions": [
       {
@@ -216,9 +228,11 @@ Example response (successful import):
 }
 ```
 
-- If the Actual client has not been initialized or the server fails to connect, the startup process fails with a descriptive message. At runtime if the API call fails, a `5xx` will be returned with the underlying message.
+- Missing Actual credential headers return `401`.
 
-- If the server is started without required environment variables the process fails immediately with a helpful message calling out missing variables.
+- The Actual client is initialized from the credentials on the request. If authorization, budget download, or an API call fails, a `5xx` will be returned with the underlying message.
+
+- If `ACTUAL_SERVER_URL` is missing, the server fails at startup with a helpful message.
 
 ## Amount conversion
 

@@ -1,41 +1,80 @@
 import * as api from "@actual-app/api";
 import { validateConfig } from "../config/actual.js";
 
-let initialized = false;
+export interface ActualCredentials {
+  readonly password: string;
+  readonly syncId: string;
+}
 
-export async function connect(): Promise<void> {
-  if (initialized) return;
+let activeCredentials: ActualCredentials | undefined;
+let operationQueue = Promise.resolve();
+
+function credentialsMatch(credentials: ActualCredentials): boolean {
+  return (
+    activeCredentials?.password === credentials.password &&
+    activeCredentials.syncId === credentials.syncId
+  );
+}
+
+async function connect(credentials: ActualCredentials): Promise<void> {
+  if (credentialsMatch(credentials)) return;
+
+  if (activeCredentials) {
+    await api.shutdown();
+    activeCredentials = undefined;
+  }
 
   const config = validateConfig();
 
-  await api.init({
-    dataDir: config.dataDir,
-    serverURL: config.serverURL,
-    password: config.password,
+  try {
+    await api.init({
+      dataDir: config.dataDir,
+      serverURL: config.serverURL,
+      password: credentials.password,
+    });
+
+    const downloadOpts = config.budgetPassword
+      ? { password: config.budgetPassword }
+      : undefined;
+
+    await api.downloadBudget(credentials.syncId, downloadOpts);
+    activeCredentials = { ...credentials };
+  } catch (error) {
+    await api.shutdown().catch(() => undefined);
+    activeCredentials = undefined;
+    throw error;
+  }
+}
+
+async function exclusively<T>(operation: () => Promise<T>): Promise<T> {
+  const previousOperation = operationQueue;
+  let release: () => void = () => undefined;
+  operationQueue = new Promise<void>((resolve) => {
+    release = resolve;
   });
 
-  const downloadOpts = config.budgetPassword
-    ? { password: config.budgetPassword }
-    : undefined;
+  await previousOperation;
+  try {
+    return await operation();
+  } finally {
+    release();
+  }
+}
 
-  await api.downloadBudget(config.syncId, downloadOpts);
-
-  initialized = true;
+export async function withActualApi<T>(
+  credentials: ActualCredentials,
+  operation: (actualApi: typeof api) => Promise<T>,
+): Promise<T> {
+  return exclusively(async () => {
+    await connect(credentials);
+    return operation(api);
+  });
 }
 
 export async function disconnect(): Promise<void> {
-  if (!initialized) return;
-  await api.shutdown();
-  initialized = false;
-}
-
-export function getApi(): typeof api {
-  if (!initialized) {
-    const err = Object.assign(
-      new Error("Actual Budget API is not initialized"),
-      { status: 503 },
-    );
-    throw err;
-  }
-  return api;
+  await exclusively(async () => {
+    if (!activeCredentials) return;
+    await api.shutdown();
+    activeCredentials = undefined;
+  });
 }
