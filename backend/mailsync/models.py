@@ -6,7 +6,15 @@ from .data_models import EmailElement, TransactionType
 class Configuration(models.Model):
     label = models.CharField(max_length=255)
     key = models.CharField(max_length=255, unique=True)
-    value = models.TextField()
+    value = models.TextField(null=True, blank=True)
+    parent = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="children",
+        help_text="If set, this configuration will be deleted when its parent is deleted or modified.",
+    )
 
     class Meta:
         verbose_name = "system configuration"
@@ -14,7 +22,20 @@ class Configuration(models.Model):
         ordering = ["label"]
 
     def __str__(self):
-        return f"{self.label} ({self.key})"
+        return self.label
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            # When an existing configuration is updated, delete all its children
+            # so they stay in sync with the parent's state.
+            old = Configuration.objects.filter(pk=self.pk).first()
+            if old and (
+                old.label != self.label
+                or old.key != self.key
+                or old.value != self.value
+            ):
+                self.children.all().delete()
+        super().save(*args, **kwargs)
 
 
 class BankAccount(models.Model):

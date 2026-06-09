@@ -5,16 +5,24 @@ from .models import BankAccount, BankMailConfig, Configuration, SyncLog
 
 @admin.register(Configuration)
 class ConfigurationAdmin(admin.ModelAdmin):
-    list_display = ("label", "key")
-    search_fields = ("label", "key", "value")
-    fieldsets = (
-        ("Configuration", {"fields": ("label", "key", "value")}),
-    )
+    list_display = ("label", "is_value_set", "parent")
+    search_fields = ("label", "value")
+    fieldsets = (("Configuration", {"fields": ("value", "parent")}),)
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
-            return ("key",)
-        return ()
+            return ("key", "label", "parent")
+        return ("parent",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    @admin.display(description="Value set", boolean=True)
+    def is_value_set(self, obj):
+        return bool(obj.value and obj.value.strip())
 
 
 class BankMailConfigInline(admin.TabularInline):
