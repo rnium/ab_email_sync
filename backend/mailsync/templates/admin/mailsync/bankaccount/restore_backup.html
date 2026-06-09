@@ -1,0 +1,36 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label='mailsync' %}">Mailsync</a>
+    &rsaquo; <a href="{% url 'admin:mailsync_bankaccount_changelist' %}">Bank accounts</a>
+    &rsaquo; {% translate "Restore backup" %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div id="content-main">
+    <p>
+      Restoring updates accounts matched by bank name and account number, creates
+      missing accounts, and synchronizes their email parsing rules. Accounts not
+      present in the file are left unchanged.
+    </p>
+    <p class="warning">
+      Parsing rules on a matched account that are not present in the backup will
+      be deleted. Related sync logs may also be deleted.
+    </p>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div class="submit-row">
+        <input type="submit" value="{% translate 'Restore backup' %}" class="default">
+        <a href="{% url 'admin:mailsync_bankaccount_changelist' %}" class="closelink">
+          {% translate "Cancel" %}
+        </a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+  <li>
+    <a href="{% url 'admin:mailsync_bankaccount_backup_export' %}">
+      {% translate "Export backup" %}
+    </a>
+  </li>
+  {% if can_restore_backup %}
+    <li>
+      <a href="{% url 'admin:mailsync_bankaccount_backup_restore' %}">
+        {% translate "Restore backup" %}
+      </a>
+    </li>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

@@ -1,5 +1,20 @@
-from django.contrib import admin
+from datetime import datetime
 
+from django.contrib import admin
+from django.contrib import messages
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.http import HttpResponse
+from django.shortcuts import redirect
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
+
+from .bank_account_backup import (
+    decode_backup,
+    encode_backup,
+    export_bank_accounts,
+    restore_bank_accounts,
+)
+from .forms import BankAccountRestoreForm
 from .models import BankAccount, BankMailConfig, Configuration, SyncLog
 
 
@@ -43,6 +58,7 @@ class BankMailConfigInline(admin.TabularInline):
 
 @admin.register(BankAccount)
 class BankAccountAdmin(admin.ModelAdmin):
+    change_list_template = "admin/mailsync/bankaccount/change_list.html"
     list_display = (
         "bank_name",
         "account_number",
@@ -83,6 +99,92 @@ class BankAccountAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = {
+            **(extra_context or {}),
+            "can_restore_backup": self.has_restore_permission(request),
+        }
+        return super().changelist_view(request, extra_context)
+
+    def has_restore_permission(self, request):
+        rule_admin = self.admin_site.get_model_admin(BankMailConfig)
+        return all(
+            (
+                self.has_view_permission(request),
+                self.has_add_permission(request),
+                self.has_change_permission(request),
+                self.has_delete_permission(request),
+                rule_admin.has_add_permission(request),
+                rule_admin.has_change_permission(request),
+                rule_admin.has_delete_permission(request),
+            )
+        )
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "backup/export/",
+                self.admin_site.admin_view(self.export_backup_view),
+                name="mailsync_bankaccount_backup_export",
+            ),
+            path(
+                "backup/restore/",
+                self.admin_site.admin_view(self.restore_backup_view),
+                name="mailsync_bankaccount_backup_restore",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def export_backup_view(self, request):
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+
+        filename = f"bank-accounts-{datetime.now():%Y%m%d-%H%M%S}.json"
+        response = HttpResponse(
+            encode_backup(export_bank_accounts()),
+            content_type="application/json",
+        )
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    def restore_backup_view(self, request):
+        if not self.has_restore_permission(request):
+            raise PermissionDenied
+
+        form = BankAccountRestoreForm(request.POST or None, request.FILES or None)
+        if request.method == "POST" and form.is_valid():
+            try:
+                payload = decode_backup(form.cleaned_data["backup_file"])
+                counts = restore_bank_accounts(payload)
+            except ValidationError as error:
+                form.add_error(None, ValidationError(error.messages))
+            else:
+                self.message_user(
+                    request,
+                    (
+                        "Backup restored: "
+                        f"{counts['accounts_created']} account(s) created, "
+                        f"{counts['accounts_updated']} updated; "
+                        f"{counts['rules_created']} rule(s) created, "
+                        f"{counts['rules_updated']} updated, "
+                        f"{counts['rules_deleted']} deleted."
+                    ),
+                    messages.SUCCESS,
+                )
+                return redirect(reverse("admin:mailsync_bankaccount_changelist"))
+
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "title": "Restore bank account backup",
+            "form": form,
+        }
+        return TemplateResponse(
+            request,
+            "admin/mailsync/bankaccount/restore_backup.html",
+            context,
+        )
 
     @admin.display(description="Actual payee")
     def actual_budget_payee(self, obj):
