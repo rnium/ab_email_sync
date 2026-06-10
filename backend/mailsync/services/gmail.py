@@ -22,7 +22,7 @@ def get_gmail_service():
             creds = Credentials.from_authorized_user_info(token_data, SCOPES)
         except Exception:
             pass
-        
+
     if not creds or not creds.valid:
         creds_config = None
         if creds and creds.expired and creds.refresh_token:
@@ -38,8 +38,8 @@ def get_gmail_service():
             key=settings.GMAIL_TOKEN_KEY,
             defaults={
                 "parent": creds_config,
-                "label": "Gmail Token JSON"
-            }
+                "label": "Gmail Token JSON",
+            },
         )
         tok_config.value = creds.to_json()
         tok_config.save()
@@ -50,6 +50,8 @@ def get_primary_unread_messages(
     max_results=settings.EMAIL_MAX_RESULTS, days=settings.EMAIL_MAX_AGE
 ) -> List[EmailMessage]:
     service = get_gmail_service()
+
+    # Step 1: list thread IDs matching the query (cheap call)
     results = (
         service.users()
         .threads()
@@ -62,46 +64,55 @@ def get_primary_unread_messages(
     )
 
     threads = results.get("threads", [])
-
     if not threads:
         return []
 
-    all_messages = []
+    # Step 2: batch-fetch every thread with full format in one HTTP round-trip
+    fetched: dict[str, dict] = {}
 
+    def _store(request_id, response, exception):
+        if exception is None and response:
+            fetched[request_id] = response
+
+    batch = service.new_batch_http_request(callback=_store)
     for thread in threads:
-        thread_data = (
+        batch.add(
             service.users()
             .threads()
             .get(
                 userId="me",
                 id=thread["id"],
-                format="metadata",
-                metadataHeaders=["Subject", "From", "Date"],
-            )
-            .execute()
+                format="full",
+            ),
+            request_id=thread["id"],
         )
+    batch.execute()
 
-        messages = thread_data.get("messages", [])
-        email_messages = []
-        for message in messages:
-            headers = message["payload"]["headers"]
+    # Step 3: flatten all messages from every thread into a single list
+    all_messages: List[EmailMessage] = []
+    for thread_id, thread_data in fetched.items():
+        for message in thread_data.get("messages", []):
+            headers = message.get("payload", {}).get("headers", [])
             subject = next(
-                (h["value"] for h in headers if h["name"] == "Subject"), "No Subject"
+                (h["value"] for h in headers if h["name"].lower() == "subject"),
+                "No Subject",
             )
             sender = next(
-                (h["value"] for h in headers if h["name"] == "From"), "Unknown"
+                (h["value"] for h in headers if h["name"].lower() == "from"),
+                "Unknown",
             )
-            date = next((h["value"] for h in headers if h["name"] == "Date"), "Unknown")
-            email_messages.append(
+            date = next(
+                (h["value"] for h in headers if h["name"].lower() == "date"),
+                "Unknown",
+            )
+            all_messages.append(
                 EmailMessage(
                     subject=subject,
                     sender=sender,
                     date_str=date,
-                    text=get_message_body(message["payload"]),
+                    text=get_message_body(message.get("payload", {})),
                     snippet=message.get("snippet", ""),
                 )
             )
-
-        all_messages.extend(email_messages)
 
     return all_messages
