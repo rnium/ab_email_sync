@@ -14,11 +14,27 @@ CONFIGURATIONS = [
         "label": "Actual Budget Sync ID",
         "value": "",
     },
+    {"key": settings.GMAIL_CONFIG_KEY, "label": "Gmail Credential JSON", "value": ""},
     {
-        "key": settings.GMAIL_CONFIG_KEY,
-        "label": "Gmail Credential JSON",
-        "value": "" 
-    }
+        "key": settings.SCHEDULER_DAYTIME_START_KEY,
+        "label": "Scheduler – Daytime Start (hour, 0–23)",
+        "value": "8",
+    },
+    {
+        "key": settings.SCHEDULER_DAYTIME_END_KEY,
+        "label": "Scheduler – Daytime End (hour, 0–23)",
+        "value": "23",
+    },
+    {
+        "key": settings.SCHEDULER_DAYTIME_INTERVAL_KEY,
+        "label": "Scheduler – Daytime Interval (minutes)",
+        "value": "5",
+    },
+    {
+        "key": settings.SCHEDULER_NIGHTTIME_INTERVAL_KEY,
+        "label": "Scheduler – Nighttime Interval (minutes)",
+        "value": "15",
+    },
 ]
 
 

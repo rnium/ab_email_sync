@@ -1,0 +1,81 @@
+services:
+
+  # ---------------------------------------------------------------------------
+  # Actual Budget API bridge – must be running before the backend starts.
+  # Port 3000 is intentionally NOT published; only the backend accesses it
+  # over the internal Docker network.
+  # ---------------------------------------------------------------------------
+  api_server:
+    build:
+      context: ./api_server
+    restart: unless-stopped
+    env_file:
+      - path: ./api_server/.env
+        required: false
+    environment:
+      NODE_ENV: production
+      # Store Actual Budget local data in a named volume
+      ACTUAL_DATA_DIR: /data
+    volumes:
+      - api_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # Django admin / web interface.
+  # Runs migrate + seed_configurations on every start (both are idempotent).
+  # This is the only service with a published port.
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      # Resolve the api_server by its Docker service name
+      ACTUAL_API_SERVER_URL: http://api_server:3000
+      # Store SQLite in the shared named volume
+      DB_DIR: /data
+    volumes:
+      - db_data:/data
+    ports:
+      - "8000:8000"
+    depends_on:
+      api_server:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Scheduler – same image as backend, runs the fetch-sync loop.
+  # Reads daytime/nighttime intervals from the database on every tick so
+  # changes made through the admin UI take effect without a restart.
+  # ---------------------------------------------------------------------------
+  scheduler:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      ACTUAL_API_SERVER_URL: http://api_server:3000
+      DB_DIR: /data
+    volumes:
+      - db_data:/data
+    depends_on:
+      api_server:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    command: ["python", "manage.py", "run_scheduler"]
+
+volumes:
+  # Actual Budget local sync data
+  api_data:
+  # Shared SQLite database (backend + scheduler)
+  db_data:
