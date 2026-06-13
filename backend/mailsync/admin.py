@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
+from unfold.admin import ModelAdmin, TabularInline
 
 from .bank_account_backup import (
     decode_backup,
@@ -19,7 +20,7 @@ from .models import BankAccount, BankMailConfig, Configuration, SyncLog
 
 
 @admin.register(Configuration)
-class ConfigurationAdmin(admin.ModelAdmin):
+class ConfigurationAdmin(ModelAdmin):
     list_display = ("label", "is_value_set", "parent")
     search_fields = ("label", "value")
     fieldsets = (("Configuration", {"fields": ("value", "parent")}),)
@@ -40,7 +41,7 @@ class ConfigurationAdmin(admin.ModelAdmin):
         return bool(obj.value and obj.value.strip())
 
 
-class BankMailConfigInline(admin.TabularInline):
+class BankMailConfigInline(TabularInline):
     model = BankMailConfig
     can_delete = True
     extra = 0
@@ -57,7 +58,7 @@ class BankMailConfigInline(admin.TabularInline):
 
 
 @admin.register(BankAccount)
-class BankAccountAdmin(admin.ModelAdmin):
+class BankAccountAdmin(ModelAdmin):
     change_list_template = "admin/mailsync/bankaccount/change_list.html"
     list_display = (
         "bank_name",
@@ -192,7 +193,7 @@ class BankAccountAdmin(admin.ModelAdmin):
 
 
 @admin.register(BankMailConfig)
-class BankMailConfigAdmin(admin.ModelAdmin):
+class BankMailConfigAdmin(ModelAdmin):
     list_display = (
         "bank_account",
         "direction",
@@ -232,7 +233,7 @@ class BankMailConfigAdmin(admin.ModelAdmin):
 
 
 @admin.register(SyncLog)
-class SyncLogAdmin(admin.ModelAdmin):
+class SyncLogAdmin(ModelAdmin):
     list_display = (
         "sync_time",
         "success",

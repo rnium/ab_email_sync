@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 
 import environ
+from django.urls import reverse_lazy
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,6 +38,9 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 # Application definition
 
 INSTALLED_APPS = [
+    "unfold",
+    "unfold.contrib.filters",
+    "unfold.contrib.forms",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -144,3 +148,78 @@ SCHEDULER_DAYTIME_START_KEY = "scheduler_daytime_start_hour"
 SCHEDULER_DAYTIME_END_KEY = "scheduler_daytime_end_hour"
 SCHEDULER_DAYTIME_INTERVAL_KEY = "scheduler_daytime_interval_minutes"
 SCHEDULER_NIGHTTIME_INTERVAL_KEY = "scheduler_nighttime_interval_minutes"
+
+# UNFOLD ADMIN
+UNFOLD = {
+    "SITE_TITLE": "AB Email Sync",
+    "SITE_HEADER": "Email Transaction Admin",
+    "SITE_SYMBOL": "sync",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": False,
+    "ENVIRONMENT": "config.admin_env.environment_callback",
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": "System",
+                "separator": False,
+                "collapsible": False,
+                "items": [
+                    {
+                        "title": "Configuration",
+                        "icon": "settings",
+                        "link": reverse_lazy("admin:mailsync_configuration_changelist"),
+                        "permission": lambda request: request.user.is_staff,
+                    },
+                ],
+            },
+            {
+                "title": "Bank Setup",
+                "separator": True,
+                "collapsible": False,
+                "items": [
+                    {
+                        "title": "Bank Accounts",
+                        "icon": "account_balance",
+                        "link": reverse_lazy("admin:mailsync_bankaccount_changelist"),
+                    },
+                    {
+                        "title": "Email Parsing Rules",
+                        "icon": "rule",
+                        "link": reverse_lazy("admin:mailsync_bankmailconfig_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "Monitoring",
+                "separator": True,
+                "collapsible": False,
+                "items": [
+                    {
+                        "title": "Sync Logs",
+                        "icon": "history",
+                        "link": reverse_lazy("admin:mailsync_synclog_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "Administration",
+                "separator": True,
+                "collapsible": False,
+                "items": [
+                    {
+                        "title": "Users",
+                        "icon": "person",
+                        "link": reverse_lazy("admin:auth_user_changelist"),
+                    },
+                    {
+                        "title": "Groups",
+                        "icon": "group",
+                        "link": reverse_lazy("admin:auth_group_changelist"),
+                    },
+                ],
+            },
+        ],
+    },
+}

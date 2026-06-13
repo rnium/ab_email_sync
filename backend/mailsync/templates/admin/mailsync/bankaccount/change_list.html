@@ -1,18 +1,24 @@
 {% extends "admin/change_list.html" %}
 {% load i18n %}
 
-{% block object-tools-items %}
-  <li>
-    <a href="{% url 'admin:mailsync_bankaccount_backup_export' %}">
-      {% translate "Export backup" %}
-    </a>
-  </li>
-  {% if can_restore_backup %}
-    <li>
-      <a href="{% url 'admin:mailsync_bankaccount_backup_restore' %}">
-        {% translate "Restore backup" %}
+{% block nav-global-side %}
+  <div class="flex flex-row gap-2 items-center">
+    <div class="flex flex-row items-center">
+      <a href="{% url 'admin:mailsync_bankaccount_backup_export' %}"
+         class="flex items-center h-[38px] justify-center -my-1 rounded-full w-[38px] hover:bg-base-100 dark:hover:bg-base-800"
+         title="{% translate 'Export backup' %}">
+        <span class="material-symbols-outlined text-font-default-light dark:text-font-default-dark">download</span>
       </a>
-    </li>
-  {% endif %}
-  {{ block.super }}
+    </div>
+    {% if can_restore_backup %}
+      <div class="flex flex-row items-center">
+        <a href="{% url 'admin:mailsync_bankaccount_backup_restore' %}"
+           class="flex items-center h-[38px] justify-center -my-1 rounded-full w-[38px] hover:bg-base-100 dark:hover:bg-base-800"
+           title="{% translate 'Restore backup' %}">
+          <span class="material-symbols-outlined text-font-default-light dark:text-font-default-dark">upload</span>
+        </a>
+      </div>
+    {% endif %}
+    {{ block.super }}
+  </div>
 {% endblock %}

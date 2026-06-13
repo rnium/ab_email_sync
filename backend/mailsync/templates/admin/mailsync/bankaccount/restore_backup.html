@@ -1,33 +1,54 @@
 {% extends "admin/base_site.html" %}
-{% load i18n %}
+{% load i18n unfold %}
 
 {% block breadcrumbs %}
   <div class="breadcrumbs">
     <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
     &rsaquo; <a href="{% url 'admin:app_list' app_label='mailsync' %}">Mailsync</a>
-    &rsaquo; <a href="{% url 'admin:mailsync_bankaccount_changelist' %}">Bank accounts</a>
+    &rsaquo; <a href="{% url 'admin:mailsync_bankaccount_changelist' %}">{% translate "Bank accounts" %}</a>
     &rsaquo; {% translate "Restore backup" %}
   </div>
 {% endblock %}
 
 {% block content %}
   <div id="content-main">
-    <p>
-      Restoring updates accounts matched by bank name and account number, creates
-      missing accounts, and synchronizes their email parsing rules. Accounts not
-      present in the file are left unchanged.
-    </p>
-    <p class="warning">
-      Parsing rules on a matched account that are not present in the backup will
-      be deleted. Related sync logs may also be deleted.
-    </p>
+    <div class="mb-4 px-3 py-2.5 leading-[18px] rounded-default bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400">
+      {% translate "Restoring updates accounts matched by bank name and account number, creates missing accounts, and synchronizes their email parsing rules. Accounts not present in the file are left unchanged." %}
+    </div>
+
+    <div class="mb-4 px-3 py-2.5 leading-[18px] rounded-default bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
+      {% translate "Parsing rules on a matched account that are not present in the backup will be deleted. Related sync logs may also be deleted." %}
+    </div>
+
+    {% if form.errors %}
+      <div class="errornote bg-red-100 mb-4 text-red-700 px-3 py-2.5 leading-[18px] rounded-default dark:bg-red-500/20 dark:text-red-400">
+        {% for error in form.non_field_errors %}
+          {{ error }}
+        {% endfor %}
+      </div>
+    {% endif %}
 
     <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
-      {{ form.as_p }}
-      <div class="submit-row">
-        <input type="submit" value="{% translate 'Restore backup' %}" class="default">
-        <a href="{% url 'admin:mailsync_bankaccount_changelist' %}" class="closelink">
+      <div class="mb-4">
+        {% for field in form %}
+          <div class="mb-2">
+            <label class="block text-sm font-medium text-font-default-light dark:text-font-default-dark mb-1" for="{{ field.id_for_label }}">
+              {{ field.label }}
+            </label>
+            {{ field }}
+            {% if field.errors %}
+              <p class="text-red-600 text-sm mt-1 dark:text-red-400">{{ field.errors|join:", " }}</p>
+            {% endif %}
+            {% if field.help_text %}
+              <p class="text-font-subtle-light text-sm mt-1 dark:text-font-subtle-dark">{{ field.help_text }}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+      <div class="submit-row flex gap-3 items-center">
+        <input type="submit" value="{% translate 'Restore backup' %}" class="button default bg-primary-600 text-white px-4 py-2 rounded-default cursor-pointer hover:bg-primary-500">
+        <a href="{% url 'admin:mailsync_bankaccount_changelist' %}" class="closelink text-font-subtle-light dark:text-font-subtle-dark hover:text-font-default-light dark:hover:text-font-default-dark">
           {% translate "Cancel" %}
         </a>
       </div>
