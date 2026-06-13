@@ -1,0 +1,19 @@
+{% load i18n static unfold %}
+
+<div class="flex flex-row gap-4 items-center ml-auto">
+    {% if environment %}
+        {% include "unfold/helpers/label.html" with text=environment.0 type=environment.1 %}
+    {% endif %}
+
+    {% action_list %}
+
+    <a href="{% url 'admin:recent_actions' %}"
+       class="flex items-center h-[38px] justify-center -my-1 rounded-full w-[38px] hover:bg-base-100 dark:hover:bg-base-800"
+       title="{% translate 'Recent actions' %}">
+        <span class="material-symbols-outlined text-font-default-light dark:text-font-default-dark">history</span>
+    </a>
+
+    {% if nav_global_side %}
+        {{ nav_global_side }}
+    {% endif %}
+</div>

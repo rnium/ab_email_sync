@@ -234,6 +234,7 @@ class BankMailConfigAdmin(ModelAdmin):
 
 @admin.register(SyncLog)
 class SyncLogAdmin(ModelAdmin):
+    list_before_template = "admin/mailsync/synclog/charts.html"
     list_display = (
         "sync_time",
         "success",
@@ -268,6 +269,11 @@ class SyncLogAdmin(ModelAdmin):
     date_hierarchy = "sync_time"
     list_select_related = ("bank_mail", "bank_mail__bank_account")
 
+    def changelist_view(self, request, extra_context=None):
+        from mailsync.views import get_chart_data
+        extra_context = {**(extra_context or {}), **get_chart_data()}
+        return super().changelist_view(request, extra_context)
+
     def has_add_permission(self, request):
         return False
 
@@ -277,3 +283,18 @@ class SyncLogAdmin(ModelAdmin):
     )
     def bank_account(self, obj):
         return obj.bank_mail.bank_account
+
+
+def _extra_admin_urls():
+    from mailsync import views as mailsync_views
+    return [
+        path(
+            "recent-actions/",
+            admin.site.admin_view(mailsync_views.recent_actions_view),
+            name="recent_actions",
+        ),
+    ]
+
+
+admin.site.extra_urls = _extra_admin_urls
+admin.site.index_template = "admin/mailsync/dashboard.html"

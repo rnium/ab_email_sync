@@ -65,7 +65,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "mailsync" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -154,16 +154,17 @@ UNFOLD = {
     "SITE_TITLE": "AB Email Sync",
     "SITE_HEADER": "Email Transaction Admin",
     "SITE_SYMBOL": "sync",
-    "SHOW_HISTORY": True,
+    "SHOW_HISTORY": False,
     "SHOW_VIEW_ON_SITE": False,
     "ENVIRONMENT": "config.admin_env.environment_callback",
+    "DASHBOARD_CALLBACK": "mailsync.views.dashboard_callback",
     "SIDEBAR": {
         "show_search": True,
         "show_all_applications": False,
         "navigation": [
             {
                 "title": "System",
-                "separator": False,
+                "separator": True,
                 "collapsible": False,
                 "items": [
                     {
@@ -188,18 +189,6 @@ UNFOLD = {
                         "title": "Email Parsing Rules",
                         "icon": "rule",
                         "link": reverse_lazy("admin:mailsync_bankmailconfig_changelist"),
-                    },
-                ],
-            },
-            {
-                "title": "Monitoring",
-                "separator": True,
-                "collapsible": False,
-                "items": [
-                    {
-                        "title": "Sync Logs",
-                        "icon": "history",
-                        "link": reverse_lazy("admin:mailsync_synclog_changelist"),
                     },
                 ],
             },

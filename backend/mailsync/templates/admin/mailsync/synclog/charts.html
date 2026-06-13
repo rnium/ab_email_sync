@@ -1,0 +1,140 @@
+<div class="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+  <div class="bg-white dark:bg-base-900 rounded-default border border-base-200 dark:border-base-800 p-4">
+    <p class="text-sm font-semibold mb-1 text-font-default-light dark:text-font-default-dark">All-time Success Rate</p>
+    <p class="text-xs text-font-subtle-light dark:text-font-subtle-dark mb-3">
+      {{ chart_success_count }} success &bull; {{ chart_error_count }} error
+    </p>
+    <div style="position:relative;height:180px;">
+      <canvas id="chart-success-rate"></canvas>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-base-900 rounded-default border border-base-200 dark:border-base-800 p-4">
+    <p class="text-sm font-semibold mb-1 text-font-default-light dark:text-font-default-dark">Daily Syncs</p>
+    <p class="text-xs text-font-subtle-light dark:text-font-subtle-dark mb-3">Last 30 days</p>
+    <div style="position:relative;height:180px;">
+      <canvas id="chart-daily-syncs"></canvas>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-base-900 rounded-default border border-base-200 dark:border-base-800 p-4">
+    <p class="text-sm font-semibold mb-1 text-font-default-light dark:text-font-default-dark">Daily Amount Synced</p>
+    <p class="text-xs text-font-subtle-light dark:text-font-subtle-dark mb-3">Last 30 days</p>
+    <div style="position:relative;height:180px;">
+      <canvas id="chart-daily-amount"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const isDark = document.documentElement.classList.contains('dark');
+  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+  const tickColor = isDark ? '#9ca3af' : '#6b7280';
+  const labelColor = isDark ? '#e5e7eb' : '#374151';
+
+  Chart.defaults.font.size = 11;
+
+  new Chart(document.getElementById('chart-success-rate'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Success', 'Error'],
+      datasets: [{
+        data: [{{ chart_success_count }}, {{ chart_error_count }}],
+        backgroundColor: ['#10b981', '#ef4444'],
+        borderWidth: 0,
+        hoverOffset: 4,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: labelColor, padding: 14 },
+        },
+      },
+    },
+  });
+
+  const dates = {{ chart_dates|safe }};
+  const axisStyle = {
+    grid: { color: gridColor },
+    ticks: { color: tickColor, maxTicksLimit: 7 },
+    border: { color: gridColor },
+  };
+
+  new Chart(document.getElementById('chart-daily-syncs'), {
+    type: 'bar',
+    data: {
+      labels: dates,
+      datasets: [
+        {
+          label: 'Success',
+          data: {{ chart_daily_success|safe }},
+          backgroundColor: '#10b981',
+          borderRadius: 2,
+          stack: 'stack',
+        },
+        {
+          label: 'Error',
+          data: {{ chart_daily_error|safe }},
+          backgroundColor: '#ef4444',
+          borderRadius: 2,
+          stack: 'stack',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ...axisStyle, stacked: true },
+        y: { ...axisStyle, stacked: true, ticks: { ...axisStyle.ticks, stepSize: 1 } },
+      },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: labelColor, padding: 14 },
+        },
+      },
+    },
+  });
+
+  new Chart(document.getElementById('chart-daily-amount'), {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [{
+        label: 'Amount',
+        data: {{ chart_daily_amount|safe }},
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.08)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: axisStyle,
+        y: axisStyle,
+      },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: labelColor, padding: 14 },
+        },
+      },
+    },
+  });
+})();
+</script>

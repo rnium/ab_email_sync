@@ -1,0 +1,58 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div>
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="font-semibold text-base-900 dark:text-base-100">{% trans "Recent Actions" %}</h2>
+    <span class="text-xs text-font-subtle-light dark:text-font-subtle-dark">{% trans "Last 100 admin actions" %}</span>
+  </div>
+
+  {% if log_entries %}
+    <div class="bg-white dark:bg-base-900 rounded-default border border-base-200 dark:border-base-800 overflow-hidden">
+      <ul>
+        {% for entry in log_entries %}
+        <li class="border-b border-base-100 dark:border-base-800 last:border-0 px-4 py-3 flex items-center gap-3 hover:bg-base-50 dark:hover:bg-base-800/50">
+
+          <div class="shrink-0 w-6 text-center">
+            {% if entry.is_addition %}
+              <span class="material-symbols-outlined text-emerald-500" style="font-size:16px">add_circle</span>
+            {% elif entry.is_change %}
+              <span class="material-symbols-outlined text-blue-500" style="font-size:16px">edit</span>
+            {% elif entry.is_deletion %}
+              <span class="material-symbols-outlined text-red-500" style="font-size:16px">delete</span>
+            {% endif %}
+          </div>
+
+          <div class="grow min-w-0">
+            <div class="font-medium truncate text-font-default-light dark:text-font-default-dark">
+              {% if entry.is_deletion or not entry.get_admin_url %}
+                {{ entry.object_repr }}
+              {% else %}
+                <a href="{{ entry.get_admin_url }}"
+                   class="hover:text-primary-600 dark:hover:text-primary-400">
+                  {{ entry.object_repr }}
+                </a>
+              {% endif %}
+            </div>
+            <div class="text-xs text-font-subtle-light dark:text-font-subtle-dark mt-0.5">
+              {% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}
+              &bull; {{ entry.user }}
+            </div>
+          </div>
+
+          <div class="shrink-0 text-xs text-font-subtle-light dark:text-font-subtle-dark whitespace-nowrap">
+            {{ entry.action_time|date:"Y-m-d H:i" }}
+          </div>
+
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <p class="text-font-subtle-light dark:text-font-subtle-dark py-8 text-center">
+      {% trans "No recent actions." %}
+    </p>
+  {% endif %}
+</div>
+{% endblock %}
