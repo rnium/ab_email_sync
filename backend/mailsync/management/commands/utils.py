@@ -1,11 +1,51 @@
-from collections import defaultdict
-from typing import AnyStr, Dict, List
+from typing import List
 
 from mailsync.data_models import Transaction, TransactionType
 from mailsync.models import BankMailConfig, SyncLog
 from mailsync.services.actual import get_accounts, get_categories
 
 type TrxList = List[Transaction]
+
+
+def _make_sync_log(trx: Transaction, success: bool, error_message: str | None = None) -> SyncLog:
+    if trx.to_trx:
+        txtype = "transfer"
+    elif trx.transaction_type == TransactionType.INCOMING:
+        txtype = "deposit"
+    else:
+        txtype = "withdrawal"
+    return SyncLog(
+        transaction_type=txtype,
+        transaction_amount=trx.amount,
+        bank_mail=trx.mail_config,
+        success=success,
+        error_message=error_message,
+        transaction_hash=str(hash(trx)),
+    )
+
+
+def log_sync_result(trx: Transaction, res: dict):
+    errors = res.get("errors") or []
+    updated = res.get("updated") or []
+
+    if errors:
+        err = errors[0]
+        err_msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
+        log = _make_sync_log(trx, success=False, error_message=err_msg)
+    elif updated:
+        msg = (
+            f"Updated | from: {trx.from_name} | subject: {trx.subject}"
+            f" | date: {trx.date} | amount: {trx.amount}"
+        )
+        log = _make_sync_log(trx, success=True, error_message=msg)
+    else:
+        log = _make_sync_log(trx, success=True)
+
+    log.save()
+
+
+def log_sync_error(trx: Transaction, error_message: str):
+    _make_sync_log(trx, success=False, error_message=error_message).save()
 
 
 def filter_transactions(transactions: TrxList) -> TrxList:
@@ -16,7 +56,7 @@ def filter_transactions(transactions: TrxList) -> TrxList:
         )
     ]
 
-    return list(filter(lambda trx: hash(trx) not in synced_hashes, transactions))
+    return list(filter(lambda trx: str(hash(trx)) not in synced_hashes, transactions))
 
 
 def set_ab_properties(transactions: TrxList):
@@ -50,11 +90,3 @@ def set_ab_properties(transactions: TrxList):
             )
             if len(categories) > 0:
                 trx.ab_category = categories[0].id
-
-
-def group_transactions_by_account(transactions: TrxList) -> Dict[AnyStr, TrxList]:
-    groups = defaultdict(list)
-    for trx in transactions:
-        groups[trx.ab_account_id].append(trx)
-
-    return dict(groups)
