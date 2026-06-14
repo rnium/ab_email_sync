@@ -1,4 +1,5 @@
 import re
+from email.utils import parseaddr
 from typing import List
 
 from .data_models import EmailElement, EmailMessage, Transaction, TransactionType
@@ -58,7 +59,9 @@ def deduce_amount(conf: BankMailConfig, msg: EmailMessage) -> float | None:
 
 
 def build_transaction(message: EmailMessage) -> Transaction | None:
-    mail_confs = BankMailConfig.objects.filter(from_name=message.sender)
+    _, sender_addr = parseaddr(message.sender)
+    sender = (sender_addr or message.sender).lower()
+    mail_confs = BankMailConfig.objects.filter(from_name=sender)
     if mail_confs.count() < 1:
         return
     conf = None

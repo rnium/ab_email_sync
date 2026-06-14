@@ -5,6 +5,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow, json
 from googleapiclient.discovery import build
+from email.utils import parseaddr
 
 from mailsync.data_models import EmailMessage
 from mailsync.models import Configuration as Config
@@ -105,10 +106,11 @@ def get_primary_unread_messages(
                 (h["value"] for h in headers if h["name"].lower() == "date"),
                 "Unknown",
             )
+            _, sender_addr = parseaddr(sender)
             all_messages.append(
                 EmailMessage(
                     subject=subject,
-                    sender=sender,
+                    sender=sender_addr.lower() if sender_addr else '',
                     date_str=date,
                     text=get_message_body(message.get("payload", {})),
                     snippet=message.get("snippet", ""),

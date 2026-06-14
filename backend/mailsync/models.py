@@ -86,6 +86,11 @@ class BankMailConfig(models.Model):
         verbose_name_plural = "email parsing rules"
         ordering = ["bank_account__bank_name", "direction", "from_name"]
 
+    def save(self, *args, **kwargs):
+        self.from_name = self.from_name.lower()
+        super().save(*args, **kwargs)
+
+
     def __str__(self):
         return f"{self.bank_account} | {self.direction} | {self.from_name}"
 

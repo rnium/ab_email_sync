@@ -1,6 +1,7 @@
 import json
 import re
 from datetime import datetime
+from email.utils import parseaddr
 
 from django.contrib import admin
 from django.contrib import messages
@@ -264,13 +265,16 @@ class BankMailConfigAdmin(ModelAdmin):
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-        sender = data.get("sender", "")
+        sender_raw = data.get("sender", "")
         subject = data.get("subject", "")
         body = data.get("body", "")
 
+        _, sender_addr = parseaddr(sender_raw)
+        sender = (sender_addr or sender_raw).lower()
+
         msg = EmailMessage(
             subject=subject,
-            sender=sender,
+            sender=sender.lower() if sender else '',
             date_str="",
             text=body,
             snippet=body[:200],
