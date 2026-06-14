@@ -1,9 +1,11 @@
+import json
+import re
 from datetime import datetime
 
 from django.contrib import admin
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -15,6 +17,8 @@ from .bank_account_backup import (
     export_bank_accounts,
     restore_bank_accounts,
 )
+from .builder import deduce_amount, deduce_transaction_type
+from .data_models import EmailMessage
 from .forms import BankAccountRestoreForm
 from .models import BankAccount, BankMailConfig, Configuration, SyncLog
 
@@ -194,6 +198,9 @@ class BankAccountAdmin(ModelAdmin):
 
 @admin.register(BankMailConfig)
 class BankMailConfigAdmin(ModelAdmin):
+    change_form_outer_before_template = (
+        "admin/mailsync/bankmailconfig/test_rule_button.html"
+    )
     list_display = (
         "bank_account",
         "direction",
@@ -230,6 +237,68 @@ class BankMailConfigAdmin(ModelAdmin):
             {"fields": ("amount_is_in", "amount_regex")},
         ),
     )
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "<int:pk>/test-rule/",
+                self.admin_site.admin_view(self.test_rule_view),
+                name="mailsync_bankmailconfig_test_rule",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def test_rule_view(self, request, pk):
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        if request.method != "POST":
+            return JsonResponse({"error": "POST required"}, status=405)
+
+        try:
+            conf = BankMailConfig.objects.get(pk=pk)
+        except BankMailConfig.DoesNotExist:
+            return JsonResponse({"error": "Rule not found"}, status=404)
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+        sender = data.get("sender", "")
+        subject = data.get("subject", "")
+        body = data.get("body", "")
+
+        msg = EmailMessage(
+            subject=subject,
+            sender=sender,
+            date_str="",
+            text=body,
+            snippet=body[:200],
+        )
+
+        if conf.from_name != sender:
+            return JsonResponse(
+                {"match": False, "reason": f"Sender does not match. Expected: {conf.from_name}"}
+            )
+
+        if not re.search(conf.subject, subject, flags=re.IGNORECASE):
+            return JsonResponse(
+                {"match": False, "reason": f"Subject does not match regex: {conf.subject}"}
+            )
+
+        transaction_type = deduce_transaction_type(conf, msg)
+        if not transaction_type:
+            return JsonResponse(
+                {"match": False, "reason": "Direction regex did not match in the given field"}
+            )
+
+        amount = deduce_amount(conf, msg)
+        if amount is None:
+            return JsonResponse(
+                {"match": False, "reason": "Amount regex did not match or could not parse amount"}
+            )
+
+        return JsonResponse({"match": True, "direction": str(transaction_type).title(), "amount": amount})
 
 
 @admin.register(SyncLog)

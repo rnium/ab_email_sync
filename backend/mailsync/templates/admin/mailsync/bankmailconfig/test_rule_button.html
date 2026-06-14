@@ -1,0 +1,211 @@
+{% load i18n %}
+{% if original %}
+<div class="mb-6">
+    <button
+        type="button"
+        onclick="document.getElementById('test-rule-modal').showModal()"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-default bg-primary-600 text-white text-sm font-medium cursor-pointer hover:bg-primary-500 transition-colors"
+    >
+        {% translate "Test Rule" %}
+    </button>
+</div>
+
+<style>
+    #test-rule-modal {
+        border: none;
+        outline: none;
+        padding: 0;
+        background: transparent;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        margin: 0;
+        width: min(90vw, 36rem);
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    #test-rule-modal::backdrop {
+        background: rgba(0, 0, 0, 0.5);
+    }
+</style>
+
+<dialog id="test-rule-modal" onclick="if (event.target === this) this.close();">
+    <div
+        class="p-6 bg-white dark:bg-base-900 rounded-default shadow-[0_20px_60px_-10px_rgba(0,0,0,0.3)]"
+    >
+        <div class="flex justify-between items-center mb-5">
+            <h2
+                class="text-base font-semibold text-font-default-light dark:text-font-default-dark"
+            >
+                {% translate "Test Rule" %}
+            </h2>
+            <button
+                type="button"
+                onclick="document.getElementById('test-rule-modal').close()"
+                class="text-font-subtle-light cursor-pointer dark:text-font-subtle-dark hover:text-font-default-light dark:hover:text-font-default-dark text-lg leading-none"
+            >
+                &times;
+            </button>
+        </div>
+
+        <div
+            class="mb-5 px-3 py-2.5 rounded-default bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 text-sm space-y-1"
+        >
+            <div>
+                <span class="font-medium">{% translate "Sender" %}:</span> {{ original.from_name }}
+            </div>
+            <div>
+                <span class="font-medium"
+                    >{% translate "Subject regex" %}:</span
+                >
+                {{ original.subject }}
+            </div>
+            <div>
+                <span class="font-medium">{% translate "Direction" %}:</span>
+                {{ original.direction }} &mdash; {{ original.get_direction_is_in_display }}:
+                <code>{{ original.direction_regex }}</code>
+            </div>
+            <div>
+                <span class="font-medium">{% translate "Amount" %}:</span>
+                {{ original.get_amount_is_in_display }}:
+                <code>{{ original.amount_regex }}</code>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-3 mb-5">
+            <div>
+                <label
+                    class="block text-sm font-medium text-font-default-light dark:text-font-default-dark mb-1"
+                    for="test-sender"
+                >
+                    {% translate "Sender" %}
+                </label>
+                <input
+                    type="text"
+                    id="test-sender"
+                    placeholder="{{ original.from_name }}"
+                    class="w-full border border-gray-200 dark:border-base-700 rounded-default px-3 py-2 text-sm bg-white dark:bg-base-800 text-font-default-light dark:text-font-default-dark focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+            </div>
+            <div>
+                <label
+                    class="block text-sm font-medium text-font-default-light dark:text-font-default-dark mb-1"
+                    for="test-subject"
+                >
+                    {% translate "Subject" %}
+                </label>
+                <input
+                    type="text"
+                    id="test-subject"
+                    class="w-full border border-gray-200 dark:border-base-700 rounded-default px-3 py-2 text-sm bg-white dark:bg-base-800 text-font-default-light dark:text-font-default-dark focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+            </div>
+            <div>
+                <label
+                    class="block text-sm font-medium text-font-default-light dark:text-font-default-dark mb-1"
+                    for="test-body"
+                >
+                    {% translate "Body" %}
+                </label>
+                <textarea
+                    id="test-body"
+                    rows="4"
+                    class="w-full border border-gray-200 dark:border-base-700 rounded-default px-3 py-2 text-sm bg-white dark:bg-base-800 text-font-default-light dark:text-font-default-dark focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y"
+                ></textarea>
+            </div>
+        </div>
+
+        <div
+            id="test-rule-result"
+            class="hidden mb-5 px-3 py-2.5 rounded-default text-sm leading-[18px]"
+        ></div>
+
+        {% url "admin:mailsync_bankmailconfig_test_rule" original.pk as test_url %} {% csrf_token %}
+
+        <div class="flex gap-3 items-center">
+            <button
+                type="button"
+                id="test-rule-btn"
+                onclick="runRuleTest('{{ test_url }}')"
+                class="px-4 py-2 rounded-default bg-primary-600 text-white text-sm font-medium cursor-pointer hover:bg-primary-500 transition-colors"
+            >
+                {% translate "Test" %}
+            </button>
+            <button
+                type="button"
+                onclick="document.getElementById('test-rule-modal').close()"
+                class="px-4 py-2 text-sm text-font-subtle-light dark:text-font-subtle-dark cursor-pointer hover:text-font-default-light dark:hover:text-font-default-dark"
+            >
+                {% translate "Cancel" %}
+            </button>
+        </div>
+    </div>
+</dialog>
+
+<script>
+    function runRuleTest(url) {
+        const btn = document.getElementById("test-rule-btn");
+        const resultEl = document.getElementById("test-rule-result");
+        const csrfToken = document.querySelector(
+            "[name=csrfmiddlewaretoken]",
+        ).value;
+
+        btn.disabled = true;
+        btn.textContent = "…";
+        resultEl.className =
+            "mb-5 px-3 py-2.5 rounded-default text-sm leading-[18px]";
+        resultEl.textContent = "";
+
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken,
+            },
+            body: JSON.stringify({
+                sender: document.getElementById("test-sender").value,
+                subject: document.getElementById("test-subject").value,
+                body: document.getElementById("test-body").value,
+            }),
+        })
+            .then(function (r) {
+                return r.json();
+            })
+            .then(function (data) {
+                if (data.match) {
+                    resultEl.className +=
+                        " bg-green-50 text-green-700 dark:bg-green-500/20 dark:text-green-400";
+                    resultEl.textContent =
+                        "Match — " +
+                        data.direction +
+                        " Amount: " +
+                        data.amount;
+                } else {
+                    resultEl.className +=
+                        " bg-red-50 text-red-700 dark:bg-red-500/20 dark:text-red-400";
+                    resultEl.textContent =
+                        "No match — " +
+                        (data.reason || data.error || "Unknown error");
+                }
+            })
+            .catch(function () {
+                resultEl.className +=
+                    " bg-red-50 text-red-700 dark:bg-red-500/20 dark:text-red-400";
+                resultEl.textContent = "Error contacting server.";
+            })
+            .finally(function () {
+                btn.disabled = false;
+                btn.textContent = '{% translate "Test" %}';
+            });
+    }
+
+    document
+        .getElementById("test-rule-modal")
+        .addEventListener("close", function () {
+            document.getElementById("test-rule-result").className =
+                "hidden mb-5 px-3 py-2.5 rounded-default text-sm leading-[18px]";
+            document.getElementById("test-rule-result").textContent = "";
+        });
+</script>
+{% endif %}
