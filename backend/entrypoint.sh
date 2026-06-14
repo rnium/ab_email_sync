@@ -5,6 +5,9 @@ if [ -n "$DB_DIR" ]; then
     mkdir -p "$DB_DIR"
 fi
 
+echo "Collecting static files..."
+python manage.py collectstatic --noinput
+
 echo "Running migrations..."
 python manage.py migrate --noinput
 

@@ -50,15 +50,18 @@ def _actual_headers() -> dict[str, str]:
     }
 
 
+_TIMEOUT = 30
+
+
 def api_get(url: str, params: dict | None = None) -> Any:
     """Perform a GET request and return the unwrapped ``data`` payload."""
-    response = requests.get(url, params=params, headers=_actual_headers())
+    response = requests.get(url, params=params, headers=_actual_headers(), timeout=_TIMEOUT)
     response.raise_for_status()
     return response.json().get("data")
 
 
 def api_post(url: str, body: Any) -> Any:
     """Perform a POST request with a JSON body and return the unwrapped ``data`` payload."""
-    response = requests.post(url, json=body, headers=_actual_headers())
+    response = requests.post(url, json=body, headers=_actual_headers(), timeout=_TIMEOUT)
     response.raise_for_status()
     return response.json().get("data")

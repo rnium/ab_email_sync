@@ -116,7 +116,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = 'Asia/Dhaka'
 
 USE_I18N = True
 
@@ -127,6 +127,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "static"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -156,7 +157,11 @@ UNFOLD = {
     "SITE_SYMBOL": "sync",
     "SITE_ICON": lambda request: "/static/mailsync/img/email.png",
     "SITE_FAVICONS": [
-        {"rel": "icon", "type": "image/png", "href": lambda request: "/static/mailsync/img/email.png"},
+        {
+            "rel": "icon",
+            "type": "image/png",
+            "href": lambda request: "/static/mailsync/img/email.png",
+        },
     ],
     "SHOW_HISTORY": False,
     "SHOW_VIEW_ON_SITE": False,
@@ -192,7 +197,9 @@ UNFOLD = {
                     {
                         "title": "Email Parsing Rules",
                         "icon": "rule",
-                        "link": reverse_lazy("admin:mailsync_bankmailconfig_changelist"),
+                        "link": reverse_lazy(
+                            "admin:mailsync_bankmailconfig_changelist"
+                        ),
                     },
                 ],
             },

@@ -1,11 +1,14 @@
 import time
 from datetime import datetime
+from pathlib import Path
 
 from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db import connection
 from django.db.utils import OperationalError
+
+HEARTBEAT_FILE = Path("/tmp/scheduler_heartbeat")
 
 
 class Command(BaseCommand):
@@ -61,4 +64,5 @@ class Command(BaseCommand):
             except Exception as exc:
                 self.stderr.write(self.style.ERROR(f"fetch-sync failed: {exc}"))
 
+            HEARTBEAT_FILE.touch()
             time.sleep(interval * 60)
