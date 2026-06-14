@@ -154,6 +154,10 @@ UNFOLD = {
     "SITE_TITLE": "AB Email Sync",
     "SITE_HEADER": "Email Transaction Admin",
     "SITE_SYMBOL": "sync",
+    "SITE_ICON": lambda request: "/static/mailsync/img/email.png",
+    "SITE_FAVICONS": [
+        {"rel": "icon", "type": "image/png", "href": lambda request: "/static/mailsync/img/email.png"},
+    ],
     "SHOW_HISTORY": False,
     "SHOW_VIEW_ON_SITE": False,
     "ENVIRONMENT": "config.admin_env.environment_callback",
