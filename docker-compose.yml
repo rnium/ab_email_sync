@@ -6,8 +6,10 @@ services:
   # over the internal Docker network.
   # ---------------------------------------------------------------------------
   api_server:
+    image: rnium/mailsync-api
     build:
       context: ./api_server
+    pull_policy: missing
     restart: unless-stopped
     env_file:
       - path: ./api_server/.env
@@ -28,8 +30,10 @@ services:
   # This is the only service with a published port.
   # ---------------------------------------------------------------------------
   backend:
+    image: rnium/mailsync-backend
     build:
       context: ./backend
+    pull_policy: missing
     restart: unless-stopped
     env_file:
       - path: ./backend/.env
@@ -54,8 +58,10 @@ services:
   # changes made through the admin UI take effect without a restart.
   # ---------------------------------------------------------------------------
   scheduler:
+    image: rnium/mailsync-backend
     build:
       context: ./backend
+    pull_policy: missing
     restart: unless-stopped
     env_file:
       - path: ./backend/.env
