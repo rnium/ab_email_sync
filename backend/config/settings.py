@@ -136,8 +136,8 @@ STATIC_ROOT = BASE_DIR / "static"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # DEFAULT SETTINGS
-EMAIL_MAX_AGE = 10  # days
-EMAIL_MAX_RESULTS = 1000
+EMAIL_MAX_AGE = env.int("EMAIL_MAX_AGE", default=1)
+EMAIL_MAX_RESULTS = env.int("EMAIL_MAX_RESULTS", default=1000)
 
 # CONFIGURATION KEYS
 ACTUAL_BUDGET_PASSWORD_KEY = "actual-budget_password"

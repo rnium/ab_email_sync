@@ -1,3 +1,5 @@
+import time
+from email.utils import parseaddr
 from typing import List
 
 from django.conf import settings
@@ -5,7 +7,6 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow, json
 from googleapiclient.discovery import build
-from email.utils import parseaddr
 
 from mailsync.data_models import EmailMessage
 from mailsync.models import Configuration as Config
@@ -53,12 +54,13 @@ def get_primary_unread_messages(
     service = get_gmail_service()
 
     # Step 1: list thread IDs matching the query (cheap call)
+    before_time = int(time.time()) - (5 * 60)
     results = (
         service.users()
         .threads()
         .list(
             userId="me",
-            q=f"is:unread is:inbox category:primary newer_than:{days}d",
+            q=f"is:inbox category:primary before:{before_time} newer_than:{days}d",
             maxResults=max_results,
         )
         .execute()
@@ -110,7 +112,7 @@ def get_primary_unread_messages(
             all_messages.append(
                 EmailMessage(
                     subject=subject,
-                    sender=sender_addr.lower() if sender_addr else '',
+                    sender=sender_addr.lower() if sender_addr else "",
                     date_str=date,
                     text=get_message_body(message.get("payload", {})),
                     snippet=message.get("snippet", ""),
