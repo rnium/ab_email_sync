@@ -1,3 +1,4 @@
+import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -8,7 +9,9 @@ from django.core.management.base import BaseCommand
 from django.db import connection
 from django.db.utils import OperationalError
 
-HEARTBEAT_FILE = Path("/tmp/scheduler_heartbeat")
+HEARTBEAT_FILE = Path(
+    os.environ.get("SCHEDULER_HEARTBEAT_FILE", "/tmp/scheduler_heartbeat")
+)
 
 
 class Command(BaseCommand):

@@ -1,9 +1,7 @@
-{% load i18n static unfold %}
+{% load i18n static unfold scheduler_tags %}
 
 <div class="flex flex-row gap-4 items-center ml-auto">
-    {% if environment %}
-        {% include "unfold/helpers/label.html" with text=environment.0 type=environment.1 %}
-    {% endif %}
+    {% scheduler_status %}
 
     {% action_list %}
 
@@ -12,7 +10,11 @@
        title="{% translate 'Recent actions' %}">
         <span class="material-symbols-outlined text-font-default-light dark:text-font-default-dark">history</span>
     </a>
-
+    
+    {% if environment %}
+        {% include "unfold/helpers/label.html" with text=environment.0 type=environment.1 %}
+    {% endif %}
+    
     {% if nav_global_side %}
         {{ nav_global_side }}
     {% endif %}

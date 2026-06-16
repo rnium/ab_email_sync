@@ -1,0 +1,50 @@
+{% load i18n %}
+{% if status == "unknown" %}
+  <div class="flex items-center gap-1.5 h-[26px] px-2.5 -my-1 rounded-full text-xs font-medium
+              bg-base-100 text-base-500 dark:bg-base-800 dark:text-base-400"
+       title="{% translate 'Scheduler has never run' %}">
+    <span class="material-symbols-outlined" style="font-size:16px">schedule</span>
+    <span class="whitespace-nowrap">{% translate "never" %}</span>
+  </div>
+{% else %}
+  <div data-scheduler-chip
+       data-epoch="{{ last_run_epoch }}"
+       data-stale="{{ stale_seconds }}"
+       class="flex items-center gap-1.5 h-[26px] px-2.5 my-1 rounded-full text-xs font-medium  bg-base-100 dark:bg-base-800
+              {% if status == 'ok' %}bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400{% else %}bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400{% endif %}"
+       title="{% blocktranslate with t=last_run %}Scheduler last ran at {{ t }}{% endblocktranslate %}">
+    <span class="material-symbols-outlined" data-scheduler-icon style="font-size:16px">{% if status == 'ok' %}schedule{% else %}warning{% endif %}</span>
+    <span class="whitespace-nowrap" data-scheduler-age>{{ age_label }}</span>
+  </div>
+
+  <script>
+  (function () {
+    var OK = "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400".split(" ");
+    var STALE = "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400".split(" ");
+
+    function fmt(s) {
+      if (s < 60) return s + "s";
+      if (s < 3600) return Math.floor(s / 60) + "m " + (s % 60) + "s";
+      var r = s % 3600;
+      return Math.floor(s / 3600) + "h " + Math.floor(r / 60) + "m";
+    }
+
+    function tick(chip) {
+      var epoch = parseInt(chip.dataset.epoch, 10);
+      var stale = parseInt(chip.dataset.stale, 10);
+      var age = Math.max(0, Math.floor(Date.now() / 1000) - epoch);
+      var isStale = age >= stale;
+
+      chip.querySelector("[data-scheduler-age]").textContent = fmt(age);
+      chip.querySelector("[data-scheduler-icon]").textContent = isStale ? "warning" : "schedule";
+      chip.classList.remove.apply(chip.classList, isStale ? OK : STALE);
+      chip.classList.add.apply(chip.classList, isStale ? STALE : OK);
+    }
+
+    document.querySelectorAll("[data-scheduler-chip]").forEach(function (chip) {
+      tick(chip);
+      setInterval(function () { tick(chip); }, 1000);
+    });
+  })();
+  </script>
+{% endif %}

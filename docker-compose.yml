@@ -43,9 +43,12 @@ services:
       ACTUAL_API_SERVER_URL: http://api_server:3000
       # Store SQLite in the shared named volume
       DB_DIR: /data
+      # Heartbeat file written by the scheduler, read here by the admin UI
+      SCHEDULER_HEARTBEAT_FILE: /shared/scheduler_heartbeat
     volumes:
-      - db_data:/data
+      - ./backend/db.sqlite3:/data/db.sqlite3
       - ./backend/static:/app/static
+      - scheduler_state:/shared
     ports:
       - "8000:8000"
     depends_on:
@@ -69,8 +72,10 @@ services:
     environment:
       ACTUAL_API_SERVER_URL: http://api_server:3000
       DB_DIR: /data
+      SCHEDULER_HEARTBEAT_FILE: /shared/scheduler_heartbeat
     volumes:
-      - db_data:/data
+      - ./backend/db.sqlite3:/data/db.sqlite3
+      - scheduler_state:/shared
     depends_on:
       api_server:
         condition: service_healthy
@@ -78,11 +83,12 @@ services:
         condition: service_started
     command: ["python", "manage.py", "run_scheduler"]
     healthcheck:
-      test: ["CMD", "sh", "-c", "test $(($(date +%s) - $(date +%s -r /tmp/scheduler_heartbeat))) -lt 1200"]
+      test: ["CMD", "sh", "-c", "test $(($(date +%s) - $(date +%s -r /shared/scheduler_heartbeat))) -lt 1200"]
       interval: 5m
       timeout: 10s
       retries: 2
       start_period: 2m
 
 volumes:
-  db_data:
+  scheduler_state:
+
