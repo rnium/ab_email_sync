@@ -39,9 +39,7 @@ services:
       - path: ./backend/.env
         required: true
     environment:
-      # Resolve the api_server by its Docker service name
       ACTUAL_API_SERVER_URL: http://api_server:3000
-      # Store SQLite in the shared named volume
       DB_DIR: /data
       # Heartbeat file written by the scheduler, read here by the admin UI
       SCHEDULER_HEARTBEAT_FILE: /shared/scheduler_heartbeat
