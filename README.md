@@ -1,4 +1,4 @@
-# AB Email Transaction
+# ab_email_sync
 
 Automatically imports bank transactions from Gmail into [Actual Budget](https://actualbudget.org/) by parsing email notifications and syncing them via the Actual Budget API.
 
@@ -29,8 +29,8 @@ Automatically imports bank transactions from Gmail into [Actual Budget](https://
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/rnium/ab_email_transaction.git
-cd ab_email_transaction
+git clone https://github.com/rnium/ab_email_sync.git
+cd ab_email_sync
 ```
 
 Copy the env files and fill in your values:
