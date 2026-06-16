@@ -91,6 +91,39 @@ def build_transaction(message: EmailMessage) -> Transaction | None:
     )
 
 
+def deduplicate_transactions(transactions: List[Transaction]) -> List[Transaction]:
+    """Drop duplicate notifications of the same transaction.
+
+    A bank may send several emails for one transaction, possibly from different
+    addresses (``from_name``), so duplicates are keyed on the bank account,
+    direction, time and amount rather than the sender. Only the first of each
+    such group is kept.
+    """
+    seen = set()
+    deduped: List[Transaction] = []
+    for trx in transactions:
+        if trx.mail_config is not None:
+            key = (
+                trx.mail_config.bank_account_id,
+                trx.transaction_type,
+                trx.date,
+                trx.amount,
+            )
+        else:
+            key = (
+                trx.from_name,
+                trx.subject,
+                trx.transaction_type,
+                trx.date,
+                trx.amount,
+            )
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(trx)
+    return deduped
+
+
 def consolidate_transactions(transactions: List[Transaction]) -> List[Transaction]:
     if len(transactions) < 2:
         return transactions
@@ -108,6 +141,11 @@ def consolidate_transactions(transactions: List[Transaction]) -> List[Transactio
                 lambda tr: (
                     tr.transaction_type == TransactionType.INCOMING
                     and tr.amount == o_trx.amount
+                    and (
+                        tr.mail_config is None
+                        or o_trx.mail_config is None
+                        or tr.mail_config.bank_account != o_trx.mail_config.bank_account
+                    )
                 ),
                 transactions,
             )
@@ -126,4 +164,5 @@ def get_transactions(messages: List[EmailMessage]) -> List[Transaction]:
     for message in messages:
         if trx := build_transaction(message):
             transactions.append(trx)
+    transactions = deduplicate_transactions(transactions)
     return consolidate_transactions(transactions)

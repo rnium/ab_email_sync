@@ -356,6 +356,7 @@ class ActualApiRequestTests(TestCase):
                 "X-Actual-Password": "server-password",
                 "X-Actual-Sync-Id": "budget-sync-id",
             },
+            timeout=30,
         )
         get_mock.return_value.raise_for_status.assert_called_once_with()
 
@@ -374,6 +375,7 @@ class ActualApiRequestTests(TestCase):
                 "X-Actual-Password": "server-password",
                 "X-Actual-Sync-Id": "budget-sync-id",
             },
+            timeout=30,
         )
         post_mock.return_value.raise_for_status.assert_called_once_with()
 
