@@ -1,4 +1,4 @@
-# ab_email_sync
+# AB Email Sync
 
 Automatically imports bank transactions from Gmail into [Actual Budget](https://actualbudget.org/) by parsing email notifications and syncing them via the Actual Budget API.
 
