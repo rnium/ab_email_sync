@@ -48,7 +48,7 @@ services:
       - ./backend/static:/app/static
       - scheduler_state:/shared
     ports:
-      - "8000:8000"
+      - "8088:8000"
     depends_on:
       api_server:
         condition: service_healthy

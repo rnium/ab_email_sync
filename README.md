@@ -72,7 +72,7 @@ touch backend/db.sqlite3
 docker compose up -d --build
 ```
 
-The admin UI will be available at `http://localhost:8000`.
+The admin UI will be available at `http://localhost:8088`.
 
 ### 4. Create a superuser
 
