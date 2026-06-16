@@ -10,11 +10,11 @@
   <div data-scheduler-chip
        data-epoch="{{ last_run_epoch }}"
        data-stale="{{ stale_seconds }}"
-       class="flex items-center gap-1.5 h-[26px] px-2.5 my-1 rounded-full text-xs font-medium  bg-base-100 dark:bg-base-800
+       class="flex items-center gap-1.5 h-[26px] px-2.5 my-1 rounded-full text-xs font-medium
               {% if status == 'ok' %}bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400{% else %}bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400{% endif %}"
        title="{% blocktranslate with t=last_run %}Scheduler last ran at {{ t }}{% endblocktranslate %}">
     <span class="material-symbols-outlined" data-scheduler-icon style="font-size:16px">{% if status == 'ok' %}schedule{% else %}warning{% endif %}</span>
-    <span class="whitespace-nowrap" data-scheduler-age>{{ age_label }}</span>
+    <span class="whitespace-nowrap tabular-nums" data-scheduler-age style="min-width:4.5ch">{{ age_label }}</span>
   </div>
 
   <script>
