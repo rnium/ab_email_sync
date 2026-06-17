@@ -33,6 +33,14 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=True)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
+GITHUB_SSO_CLIENT_ID = env("GITHUB_SSO_CLIENT_ID")
+GITHUB_SSO_CLIENT_SECRET =  env("GITHUB_SSO_CLIENT_SECRET")
+
+GITHUB_SSO_AUTO_CREATE_USERS = False   # don't create new users
+GITHUB_SSO_UNIQUE_EMAIL = True
+
+GITHUB_SSO_ALLOWABLE_DOMAINS = ["gmail.com"]  # Check against user's primary email
+
 
 
 # Application definition
@@ -46,6 +54,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "django_github_sso",
     "django.contrib.staticfiles",
     "mailsync",
 ]
