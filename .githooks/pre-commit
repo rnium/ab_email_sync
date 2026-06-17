@@ -1,0 +1,16 @@
+#!/bin/sh
+# Run the Django test suite before allowing a commit.
+# A non-zero exit aborts the commit.
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT/backend"
+
+# Use the project virtualenv if present.
+if [ -f venv/bin/activate ]; then
+    # shellcheck disable=SC1091
+    . venv/bin/activate
+fi
+
+echo "pre-commit: running Django tests..."
+python manage.py test --verbosity 1

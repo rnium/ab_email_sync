@@ -175,6 +175,21 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
+### Git hooks
+
+A `pre-commit` hook runs the Django test suite and aborts the commit if any test fails. The hooks live in the tracked `.githooks/` directory. Activate them once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+### Running tests
+
+```bash
+cd backend
+python manage.py test
+```
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
