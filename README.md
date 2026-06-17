@@ -50,6 +50,9 @@ cp api_server/.env.example api_server/.env
 | `ACTUAL_API_SERVER_URL` | URL of the `api_server` service (default: `http://api_server:3000` in Docker) |
 | `EMAIL_MAX_AGE` | How many days back to fetch emails (default: `1`) |
 | `EMAIL_MAX_RESULTS` | Max emails to fetch per run (default: `1000`) |
+| `GITHUB_SSO_CLIENT_ID` | *(optional)* GitHub OAuth app client ID — enables "Sign in with GitHub" (see [GitHub SSO](#optional-github-sso-login)) |
+| `GITHUB_SSO_CLIENT_SECRET` | *(optional)* GitHub OAuth app client secret |
+| `GITHUB_SSO_ALLOWABLE_DOMAINS` | *(optional)* Comma-separated email domains allowed to sign in via GitHub (default: `gmail.com`) |
 
 **`api_server/.env`**
 
@@ -101,6 +104,49 @@ python manage.py gmail_auth
 ```
 
 The token is saved to the database and refreshed automatically from that point on.
+
+## (Optional) GitHub SSO login
+
+By default the admin login page shows the usual **username & password** form. You can additionally enable a **"Sign in with GitHub"** button. This is entirely optional — if the credentials below are not set, the GitHub button is automatically hidden and only the username/password form is shown.
+
+### 1. Create a GitHub OAuth app
+
+1. Go to **GitHub → Settings → Developer settings → [OAuth Apps](https://github.com/settings/developers) → New OAuth App** (for an organisation, use the org's developer settings instead).
+2. Fill in:
+   - **Application name** — anything, e.g. `AB Email Sync`
+   - **Homepage URL** — where the app is hosted, e.g. `http://localhost:8000`
+   - **Authorization callback URL** — `<your-host>/github_sso/callback/`
+     (e.g. `http://localhost:8000/github_sso/callback/`)
+3. Click **Register application**, then **Generate a new client secret**.
+4. Copy the **Client ID** and **Client secret**.
+
+### 2. Add the credentials
+
+In `backend/.env`:
+
+```env
+GITHUB_SSO_CLIENT_ID=your_client_id
+GITHUB_SSO_CLIENT_SECRET=your_client_secret
+# Optional: restrict which email domains may sign in (default: gmail.com)
+GITHUB_SSO_ALLOWABLE_DOMAINS=gmail.com
+```
+
+Restart the backend so the new settings are picked up:
+
+```bash
+docker compose up -d --build backend
+```
+
+The GitHub button will now appear on the login page.
+
+### 3. Note on user accounts
+
+Auto-creation of users is **disabled** — signing in with GitHub does **not** create a new account. The GitHub account's verified email must:
+
+- match the email of an **existing Django user** (create one via `createsuperuser` or the **Users** admin), and
+- belong to one of the domains in `GITHUB_SSO_ALLOWABLE_DOMAINS`.
+
+If either condition fails, the sign-in is rejected.
 
 ## Scheduler intervals
 

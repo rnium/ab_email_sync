@@ -35,9 +35,17 @@ DEBUG = env.bool("DEBUG", default=True)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
-
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+GITHUB_SSO_CLIENT_ID = env.str("GITHUB_SSO_CLIENT_ID", default='')
+GITHUB_SSO_CLIENT_SECRET =  env.str("GITHUB_SSO_CLIENT_SECRET", default='')
+# Only enable GitHub SSO when both OAuth credentials are configured. When
+# disabled, django_github_sso skips its admin login template override and URL
+# routes, so the GitHub sign-in option is hidden from the login screen.
+GITHUB_SSO_ENABLED = bool(GITHUB_SSO_CLIENT_ID and GITHUB_SSO_CLIENT_SECRET)
+GITHUB_SSO_AUTO_CREATE_USERS = False   # don't create new users
+GITHUB_SSO_UNIQUE_EMAIL = True
+GITHUB_SSO_ALLOWABLE_DOMAINS = env.list("GITHUB_SSO_ALLOWABLE_DOMAINS", default=["gmail.com"])
 
 # Application definition
 
@@ -50,6 +58,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "django_github_sso",
     "django.contrib.staticfiles",
     "mailsync",
 ]

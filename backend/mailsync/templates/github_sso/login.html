@@ -1,0 +1,86 @@
+{% extends 'unfold/layouts/unauthenticated.html' %}
+{% load i18n unfold sso_tags %}
+
+{% block title %}Sign in | {{ site_title }}{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    {{ form.media }}
+{% endblock %}
+
+{% block content %}
+    {% include "unfold/helpers/unauthenticated_title.html" with title=site_title|default:_('Django site admin') subtitle=_('Sign in to') %}
+
+    {% include "unfold/helpers/messages.html" %}
+
+    {% if form.errors or form.non_field_errors %}
+        <div class="flex flex-col gap-4 mb-8 *:mb-0">
+            {% include "unfold/helpers/messages/errornote.html" with errors=form.errors %}
+
+            {% include "unfold/helpers/messages/error.html" with errors=form.non_field_errors %}
+
+            {% if user.is_authenticated %}
+                {% blocktranslate trimmed asvar message %}
+                    You are authenticated as {{ username }}, but are not authorized to
+                    access this page. Would you like to login to a different account?
+                {% endblocktranslate %}
+
+                {% include "unfold/helpers/messages/error.html" with error=message %}
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <form action="{{ app_path }}" method="post" id="login-form">
+        {% csrf_token %}
+
+        {% include "unfold/helpers/field.html" with field=form.username %}
+
+        {% include "unfold/helpers/field.html" with field=form.password %}
+
+        <div class="flex flex-col gap-3 mt-6">
+            {% component "unfold/components/button.html" with submit=1 variant="primary" class="submit-row w-full" %}
+                {% translate 'Log in' %} <span class="material-symbols-outlined relative right-0 transition-all group-hover:-right-1 text-sm">arrow_forward</span>
+            {% endcomponent %}
+
+            {% url 'admin_password_reset' as password_reset_url %}
+            {% url 'admin:admin_password_reset' as unfold_password_reset_url %}
+
+            {% if password_reset_url or unfold_password_reset_url %}
+                {% component "unfold/components/button.html" with href=password_reset_url|default:unfold_password_reset_url variant="secondary" class="password-reset-link w-full" %}
+                    {% translate 'Forgotten your password or username?' %}
+                {% endcomponent %}
+            {% endif %}
+        </div>
+    </form>
+
+    {% define_sso_providers as sso_providers %}
+
+    {% if sso_providers %}
+        <div class="flex items-center gap-4 my-7">
+            <span class="grow border-t border-gray-200 dark:border-gray-800"></span>
+            <span class="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-600">{% trans "or" %}</span>
+            <span class="grow border-t border-gray-200 dark:border-gray-800"></span>
+        </div>
+
+        <div class="flex flex-col gap-3">
+            {% for provider in sso_providers %}
+            <a href="{{ provider.login_url }}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}"
+               class="flex items-center gap-3 w-full px-5 py-3.5 rounded-full font-semibold text-white text-sm transition-colors duration-150 select-none group"
+               style="background-color: #24292f;"
+               onmouseover="this.style.backgroundColor='#32383e'"
+               onmouseout="this.style.backgroundColor='#24292f'">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                     class="shrink-0" width="20" height="20">
+                    <path d="M12 0C5.37 0 0 5.373 0 12c0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.298 24 12c0-6.627-5.373-12-12-12z"/>
+                </svg>
+                <span class="flex-1 text-center py-3">{{ provider.text }}</span>
+                <span class="material-symbols-outlined text-base leading-none opacity-50 transition-transform duration-150 group-hover:translate-x-0.5">
+                    arrow_forward
+                </span>
+            </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    
+{% endblock %}
