@@ -7,10 +7,11 @@ from .helpers import make_message, make_transaction
 
 
 class TransactionUtilsTests(SimpleTestCase):
+    @patch("mailsync.builder.filter_synced", side_effect=lambda trx: trx)
     @patch("mailsync.builder.consolidate_transactions")
     @patch("mailsync.builder.build_transaction")
     def test_get_transactions_filters_failed_builds_before_consolidating(
-        self, build_mock, consolidate_mock
+        self, build_mock, consolidate_mock, filter_mock
     ):
         messages = [
             make_message(subject="first"),

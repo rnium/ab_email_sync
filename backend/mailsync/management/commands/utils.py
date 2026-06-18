@@ -42,21 +42,31 @@ def log_sync_result(trx: Transaction, res: dict):
         log = _make_sync_log(trx, success=True)
 
     log.save()
+    _log_consumed_leg(trx, log)
+
+
+def _log_consumed_leg(trx: Transaction, transfer_log: SyncLog):
+    """Record the incoming leg consumed into a transfer.
+
+    A transfer is synced as the single outgoing transaction; its incoming
+    counterpart (``trx.to_trx``) is dropped during consolidation and would
+    otherwise never reach SyncLog, letting it re-sync as a standalone deposit
+    if it later reappears without its outgoing leg. Mirror the transfer's
+    outcome so the incoming email can't be processed again.
+    """
+    if trx.to_trx is None:
+        return
+    _make_sync_log(
+        trx.to_trx,
+        success=transfer_log.success,
+        error_message=transfer_log.error_message,
+    ).save()
 
 
 def log_sync_error(trx: Transaction, error_message: str):
-    _make_sync_log(trx, success=False, error_message=error_message).save()
-
-
-def filter_transactions(transactions: TrxList) -> TrxList:
-    synced_hashes = [
-        log.transaction_hash
-        for log in SyncLog.objects.filter(
-            transaction_hash__in=[hash(trx) for trx in transactions]
-        )
-    ]
-
-    return list(filter(lambda trx: str(hash(trx)) not in synced_hashes, transactions))
+    log = _make_sync_log(trx, success=False, error_message=error_message)
+    log.save()
+    _log_consumed_leg(trx, log)
 
 
 def set_ab_properties(transactions: TrxList):

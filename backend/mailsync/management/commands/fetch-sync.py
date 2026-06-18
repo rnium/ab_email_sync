@@ -12,7 +12,6 @@ class Command(BaseCommand):
         transactions = get_transactions(messages)
         if len(transactions) == 0:
             return
-        transactions = utils.filter_transactions(transactions)
         utils.set_ab_properties(transactions)
         for trx in transactions:
             try:

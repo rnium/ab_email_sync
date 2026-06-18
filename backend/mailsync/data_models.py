@@ -50,12 +50,7 @@ class Transaction:
         self.mail_config = mail_config
 
     def __hash__(self):
-        to_trx_key = (
-            (self.to_trx.from_name, self.to_trx.subject, self.to_trx.date, self.to_trx.amount)
-            if self.to_trx is not None
-            else None
-        )
-        key = str((self.from_name, self.subject, self.date, self.amount, to_trx_key))
+        key = str((self.from_name, self.subject, self.date, self.amount))
         return int(sha256(key.encode()).hexdigest(), 16)
 
 

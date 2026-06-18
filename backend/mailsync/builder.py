@@ -3,7 +3,7 @@ from email.utils import parseaddr
 from typing import List
 
 from .data_models import EmailElement, EmailMessage, Transaction, TransactionType
-from .models import BankMailConfig
+from .models import BankMailConfig, SyncLog
 
 
 def deduce_transaction_type(
@@ -152,11 +152,21 @@ def consolidate_transactions(transactions: List[Transaction]) -> List[Transactio
         )
         if len(in_transactions) == 0:
             continue
+
         o_trx.to_trx = in_transactions[0]
         removables.append(in_transactions[0])
 
     consolidated = list(filter(lambda tr: tr not in removables, transactions))
     return consolidated
+
+
+def filter_synced(transactions: List[Transaction]) -> List[Transaction]:
+    synced = set(
+        SyncLog.objects.filter(
+            transaction_hash__in=[str(hash(trx)) for trx in transactions]
+        ).values_list("transaction_hash", flat=True)
+    )
+    return [trx for trx in transactions if str(hash(trx)) not in synced]
 
 
 def get_transactions(messages: List[EmailMessage]) -> List[Transaction]:
@@ -165,4 +175,5 @@ def get_transactions(messages: List[EmailMessage]) -> List[Transaction]:
         if trx := build_transaction(message):
             transactions.append(trx)
     transactions = deduplicate_transactions(transactions)
+    transactions = filter_synced(transactions)
     return consolidate_transactions(transactions)
